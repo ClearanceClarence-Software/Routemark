@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <title>Restbench</title>
+  <rect width="256" height="256" fill="#16181b"/>
+  <g transform="translate(46 46) scale(3.4167)">
+    <rect x="9" y="24" width="8" height="14" rx="2" fill="#c3ec6a" opacity="0.55"/>
+    <rect x="20" y="8" width="8" height="30" rx="2" fill="#c3ec6a"/>
+    <rect x="31" y="17" width="8" height="21" rx="2" fill="#c3ec6a" opacity="0.8"/>
+    <rect x="5" y="40" width="38" height="3" rx="1.5" fill="#eceef1"/>
+  </g>
+</svg>

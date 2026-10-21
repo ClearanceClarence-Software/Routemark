@@ -1,0 +1,43 @@
+{
+  "name": "restbench",
+  "version": "0.1.3",
+  "description": "Browse every REST API route on your site and send test requests to it from wp-admin.",
+  "private": true,
+  "license": "GPL-2.0-or-later",
+  "author": "ClearanceClarence",
+  "homepage": "https://github.com/ClearanceClarence/restbench",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ClearanceClarence/restbench.git"
+  },
+  "bugs": "https://github.com/ClearanceClarence/restbench/issues",
+  "files": [
+    "restbench.php",
+    "uninstall.php",
+    "includes",
+    "build",
+    "licenses",
+    "readme.txt"
+  ],
+  "scripts": {
+    "build": "wp-scripts build src/index.tsx",
+    "start": "wp-scripts start src/index.tsx",
+    "typecheck": "tsc --noEmit",
+    "lint:js": "wp-scripts lint-js src",
+    "zip": "npm run build && node scripts/zip.mjs"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@wordpress/scripts": "^35.0.0",
+    "archiver": "^7.0.1",
+    "typescript": "^6.0.3"
+  },
+  "dependencies": {
+    "@fontsource/atkinson-hyperlegible-mono": "^5.3.0",
+    "@fontsource/atkinson-hyperlegible-next": "^5.3.0",
+    "@wordpress/api-fetch": "^8.0.0",
+    "@wordpress/element": "^10.0.0",
+    "@wordpress/i18n": "^7.0.0"
+  }
+}

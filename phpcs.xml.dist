@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<ruleset name="Restbench">
+	<description>WordPress Coding Standards, including the escaping, sanitizing and nonce checks.</description>
+
+	<file>restbench.php</file>
+	<file>uninstall.php</file>
+	<file>includes</file>
+
+	<arg name="extensions" value="php"/>
+	<arg value="sp"/>
+
+	<rule ref="WordPress"/>
+
+	<config name="minimum_wp_version" value="6.6"/>
+	<rule ref="WordPress.WP.I18n">
+		<properties>
+			<property name="text_domain" type="array">
+				<element value="restbench"/>
+			</property>
+		</properties>
+	</rule>
+</ruleset>
