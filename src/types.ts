@@ -25,7 +25,12 @@ export interface RouteArg extends SchemaNode {
 export interface Endpoint {
 	methods: string[];
 	args: Record< string, RouteArg >;
+	// true for both "missing" and "open" below, since both work without logging in
 	isPublic: boolean;
+	// missing: no permission_callback at all, open: __return_true, check: anything else
+	permission: 'missing' | 'open' | 'check';
+	// args with no type, validate_callback or sanitize_callback
+	uncheckedArgs: string[];
 }
 
 export interface RouteInfo {
@@ -74,6 +79,43 @@ export interface RunResult {
 	raw: string;
 	json: unknown;
 	isJson: boolean;
+	// User ID from the X-Routemark-As response header, if the server switched.
+	ranAs?: number | null;
+	// From the X-Routemark-Stats response header. See class-request-stats.php.
+	stats?: ServerStats | null;
+}
+
+export interface ServerStats {
+	queries: number;
+	handlerMs: number;
+	queriesTotal: number;
+	totalMs: number;
+	peakMemory: number;
+}
+
+export interface HookCallback {
+	priority: number;
+	callback: string;
+	source: RouteSource | null;
+}
+
+export interface HookInfo {
+	name: string;
+	callbacks: HookCallback[];
+}
+
+export interface HooksResponse {
+	subjects: string[];
+	route: HookInfo[];
+	global: HookInfo[];
+}
+
+// Who a request is sent as. null means you, id 0 means logged out.
+export interface SendAsUser {
+	id: number;
+	name: string;
+	login?: string;
+	role: string;
 }
 
 export interface HistoryEntry {
@@ -84,6 +126,7 @@ export interface HistoryEntry {
 	status: number;
 	durationMs: number;
 	draft: Draft;
+	as?: SendAsUser | null;
 }
 
 export interface Filters {
@@ -109,6 +152,12 @@ export interface Settings {
 declare global {
 	interface Window {
 		// userId keys the request history, so two admins on one browser don't see each other's requests
-		routemarkSettings?: { restRoot: string; version: string; userId: number; settings?: Settings };
+		routemarkSettings?: {
+			restRoot: string;
+			version: string;
+			userId: number;
+			settings?: Settings;
+			sendAs?: { nonce: string; name: string };
+		};
 	}
 }

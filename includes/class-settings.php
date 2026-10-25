@@ -159,7 +159,22 @@ class Settings {
 					'args'                => $args,
 					'show_in_index'       => false,
 				),
+				'schema' => array( $this, 'get_schema' ),
 			)
+		);
+	}
+
+	/**
+	 * Response schema, built from the same schema() as everything else.
+	 *
+	 * @return array
+	 */
+	public function get_schema(): array {
+		return array(
+			'$schema'    => 'http://json-schema.org/draft-04/schema#',
+			'title'      => 'routemark-settings',
+			'type'       => 'object',
+			'properties' => self::schema(),
 		);
 	}
 

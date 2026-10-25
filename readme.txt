@@ -4,7 +4,7 @@ Tags: rest api, developer, debug, headless, json
 Requires at least: 6.6
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.2.0
+Stable tag: 0.3.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -21,10 +21,14 @@ What you get:
 * Arguments for each endpoint, with types, defaults, allowed values and descriptions.
 * A request form that pre-fills query parameters from those arguments and can build a JSON body skeleton for POST/PUT/PATCH.
 * The response with status, timing, size and the WordPress pagination headers, plus a collapsible JSON view and the raw text.
+* Server numbers for every request you send: how many database queries it ran, how long PHP spent on it and peak memory. So you can tell a slow endpoint from a slow connection.
+* A Hooks tab that lists every plugin hooked into a route's filters and actions (rest_prepare_post, rest_post_dispatch and so on), with the function, priority and plugin name. When a field shows up that you didn't expect, or goes missing, this tells you who did it.
 * "Copy as code" for wp.apiFetch, fetch, cURL and PHP (rest_do_request).
+* "Send as": send the same request as logged out, or as another user. Pick one user per role (an editor, a subscriber) or search for someone, and see exactly what they'd get back.
 * A history of the requests you sent, so you can go back to one.
 * Settings for history, confirming before DELETE (or any change), the default code language, how much of a JSON response opens, light or dark, and namespaces to hide.
 * A short list of endpoints that are open to anyone without logging in, which is handy when you're checking what a site exposes.
+* A Report that goes through every route and flags the ones worth a look: no permission check at all, anyone allowed to change data, arguments WordPress never checks, and routes with no schema. Grouped by plugin, worst first, with a button to open each one as logged out. You can copy it as text for a ticket or a client.
 
 Only administrators (the manage_options capability) can see the page or the route list.
 
@@ -52,15 +56,47 @@ The one catch is routes a plugin only registers in some situations (say, only on
 
 = Does it change how my API behaves? =
 
-No. It reads the route table WordPress already has and registers one read-only endpoint of its own (routemark/v1/routes), which only admins can call.
+No. It reads the route table WordPress already has and adds a few endpoints of its own under routemark/v1, which only admins can call.
+
+Requests you send from the Routemark page carry two extra things: a header asking for the server numbers (query count, PHP time, memory), and, if you picked someone under "Send as", the user to run it as. Both are only honored for administrators. Nothing changes for requests from anywhere else.
+
+= How does "Send as" work, and is it safe? =
+
+When you pick someone under "Send as", Routemark adds two headers to that one request: the user ID and a nonce that belongs to you. On the server, after WordPress has checked your login as usual, Routemark checks the nonce and that you're allowed to switch, then runs the request as that user. As soon as the response is ready it switches back to you. Nothing is saved, no cookies change, and you stay logged in as yourself.
+
+You need manage_options, plus permission to edit the user you pick (edit_user). On multisite that means a site admin can't send requests as a super admin. Logged out is always available to admins.
+
+Requests sent as someone else are still real. If you send a POST as an editor, the post is created by that editor. After a reload you're always back to sending as yourself.
 
 = Why does a route show "No login needed"? =
 
 Its permission callback is __return_true. That's normal for things like oEmbed and the API index. If you see one of your own endpoints there and didn't mean it, that's worth fixing.
 
+If it says "No permission check" instead, the route was registered without a permission_callback at all. WordPress logs a notice about that, but still runs it for anyone.
+
+= What does the Hooks tab show? =
+
+For routes from core's post, term, user and comment controllers (and plugins that extend them), every callback on the per-object hooks, like rest_prepare_post or rest_pre_insert_product. For every route, the callbacks on the hooks that run on all REST requests, like rest_pre_dispatch and rest_post_dispatch. Each one shows its priority, the function or class method, and the plugin or theme it lives in. WordPress core and Routemark's own callbacks are hidden unless you switch them on.
+
+It lists what's registered when you open the tab. A plugin that only adds a filter partway through a request won't show up.
+
+= Where do the query count and PHP time come from? =
+
+When you press Send, Routemark asks your site to measure the request. Counting starts when WordPress begins handling it and stops when the response is ready, so it covers the permission check, the callback and every filter, but not _embed. Hover over the numbers to see the totals for the whole request, including loading WordPress itself. Only administrators get these numbers, and only for requests sent from the Routemark page.
+
+= What does the Report check? =
+
+Only how each route was registered. It doesn't send any requests.
+
+* High: a route with no permission_callback that changes data, or one that changes data and uses __return_true.
+* Medium: a read-only route with no permission_callback, or arguments with no type, validate_callback or sanitize_callback on a route that changes data or is public.
+* Low: the same unchecked arguments on other routes, and routes with no schema.
+
+It can't tell what a permission callback actually allows, only that there is one. For that, open the route and try it with "Send as". WordPress core is left out by default, there's a switch to include it.
+
 = It says "rest_forbidden" for some routes =
 
-You're sending as yourself, so you get the same answer your account would get from any other client. Some endpoints need a specific capability, and some (like application passwords) need a different auth method entirely.
+Check who you're sending as. Unless you picked someone under "Send as", you get the same answer your own account would get from any other client. Some endpoints need a specific capability, and some (like application passwords) need a different auth method entirely.
 
 = Will there be a paid version? =
 
@@ -72,6 +108,9 @@ Maybe. If it happens it'll be a separate add-on plugin. Nothing in this plugin i
 2. Sending a request, with the response next to it.
 3. The Docs tab: arguments and response schema for a route.
 4. Settings: history, confirmations, display options and hidden namespaces.
+5. Send as: the same request sent as an editor, who isn't allowed to read site settings.
+6. The Report: routes worth a second look, grouped by the plugin that added them.
+7. The Hooks tab: which plugins hook into /wp/v2/posts, with the query count and PHP time for the request below.
 
 == Development ==
 
@@ -92,10 +131,22 @@ Routemark bundles the Atkinson Hyperlegible Next and Atkinson Hyperlegible Mono 
 
 == Changelog ==
 
+= 0.3.0 =
+* New: "Send as". Send any request as logged out or as another user, so you can see what an editor, a subscriber or a visitor gets back from an endpoint. Pick one user per role or search by name, login or email. The response shows who it ran as, and history marks requests that weren't sent as you.
+* New: a Report (top right) that flags routes with no permission check, routes anyone can use to change data, arguments WordPress never checks, and routes with no schema. Grouped by plugin, worst first. Each finding opens the route, or opens it as logged out so you can try it straight away. "Copy as text" gives you the whole thing for a ticket or a client email.
+* New: routes registered without a permission_callback get a "No permission check" badge, and now show up in the overview's "Open to everyone" list. Before, only __return_true did.
+* New: server numbers on every response: database queries, PHP time and peak memory, measured on your site while it handles the request.
+* New: a Hooks tab for each route, listing the plugins hooked into its filters and actions, with function, priority and plugin name.
+* New endpoints routemark/v1/users and routemark/v1/hooks, admins only.
+* Routemark's own endpoints now have a response schema.
+
 = 0.2.0 =
 * First release on WordPress.org.
 
 == Upgrade Notice ==
+
+= 0.3.0 =
+Adds "Send as" for testing endpoints as other users, a Report of routes with weak permission checks, a Hooks tab, and query counts and timing for every request.
 
 = 0.2.0 =
 First WordPress.org release.

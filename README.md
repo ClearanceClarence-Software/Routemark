@@ -2,6 +2,10 @@
   <img src=".wordpress-org/banner-1544x500.png" alt="Routemark, a REST API explorer that lives in wp-admin" width="772">
 </p>
 
+<p align="center">
+  <a href="https://github.com/ClearanceClarence-Software/Routemark/actions/workflows/ci.yml"><img src="https://github.com/ClearanceClarence-Software/Routemark/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+</p>
+
 Routemark is a WordPress plugin that lists every REST API route on your site, shows you what each one expects, and lets you send requests to it from wp-admin, logged in as yourself. It's the stuff you'd normally do with Postman, a browser console and a lot of guessing, but on one page under Tools.
 
 It works with whatever is installed. Core, WooCommerce, form plugins, your theme, that one plugin a previous developer left behind: if it registers a route, Routemark shows it and tells you who added it.
@@ -20,8 +24,39 @@ You've taken over a site with 30 plugins and something keeps showing up under `/
 **Checking what's open to the public**
 The overview has a list of every endpoint that anyone can call without logging in (permission callback set to `__return_true`). Most of them are fine, like oEmbed or a store's cart endpoint. But if your own custom endpoint is in that list and you didn't mean it to be, you'll want to know before someone else finds it.
 
+**Auditing a site you've just taken over**
+Open **Report** at the top. It goes through every route and lists what's worth a look, grouped by plugin with the worst first: routes registered with no `permission_callback` at all (WordPress logs a notice, then runs them for anyone), routes that let anyone change data, arguments with no type or callbacks so they reach the handler unchecked, and routes with no schema. Every finding has an "Open as logged out" button, so you can go from "this looks open" to "yes, a visitor can call it" in one click. **Copy as text** gives you the list for a ticket:
+
+```
+## Leaky Forms
+- [High] POST /leaky/v1/submit: No permission check. ...
+- [High] POST /leaky/v1/subscribe: Anyone can change data. ...
+- [Medium] GET /leaky/v1/stats: No permission check. ...
+```
+
+The report only reads how routes were registered. It can't see what a permission callback actually allows, which is what Send as is for.
+
+**"Where did this field come from?" and "Why is this slow?"**
+Every response shows how many database queries WordPress ran for it, how long PHP took and peak memory, measured on the server, so 300 queries for 10 posts stands out straight away. The **Hooks** tab lists everything hooked into the route: for `/wp/v2/posts` that's `rest_prepare_post`, `rest_post_query`, `rest_pre_insert_post` and the rest, plus the filters every REST request goes through. Each callback shows its priority, the function and the plugin it comes from:
+
+```
+rest_prepare_post
+  20  demo_shop_price()                          Demo Shop
+rest_post_query
+  10  closure in plugins/demo-shop/demo-shop.php:19   Demo Shop
+```
+
 **Testing your own endpoint while you build it**
 Register a route, hit Reload routes, and it's there with its arguments listed. Fill in the parameters and send. There's no nonce to copy and no application password to set up, because you're already logged in. When it returns a 400, the WordPress error code and message are shown at the top instead of buried in the JSON.
+
+**"What does an editor actually get back?"**
+Permission bugs are hard to test from your own admin account, because everything works for you. Under the address bar there's **Send as**: switch it to Logged out, to one user per role, or search for a specific person, and send the same request again. You see exactly what that user gets, 403s and missing fields included. A `POST` sent as an author creates a post by that author, so it's real, same as everything else.
+
+```
+Send as: You            GET /wp/v2/settings   200 OK
+Send as: Jane (Editor)  GET /wp/v2/settings   403 rest_forbidden
+Send as: Logged out     GET /wp/v2/settings   401 rest_forbidden
+```
 
 **Front-end or headless work**
 Before you write the fetch call, look up the route: which arguments it takes, their types and defaults, which values an enum allows, and what the response schema looks like. Then send it, check the result, and copy it as code:
@@ -100,6 +135,25 @@ npm run zip        # build + dist/routemark-<version>.zip
 
 Symlink or copy the folder into `wp-content/plugins/` and activate it. On XAMPP that's `C:\xampp\htdocs\<site>\wp-content\plugins\routemark`.
 
+### Tests
+
+The tests run against a real WordPress: the REST endpoints over HTTP, and the screens in Chromium, with [Playwright](https://playwright.dev). `wp-env` gives you that WordPress in Docker on http://localhost:8888, with Routemark and three fixture plugins active:
+
+- **Demo Shop**: well-behaved. A controller that extends core's, an open read-only route, and two filters on posts.
+- **Leaky Forms**: one badly registered route for each thing the Report should catch. Never put it on a real site.
+- **Routemark Test Setup**: creates the test users (jane, ali, sam, admin2, all with password `password`) and a few helper routes.
+
+```bash
+npm run build
+npm run env:start   # needs Docker
+npm run test:e2e    # or test:e2e:ui to watch them run
+npm run env:stop
+```
+
+To run them against another site, set it up the same way (activate the plugins in `tests/e2e/fixtures/plugins`, copy `tests/e2e/fixtures/mu-plugins/site-tweaks.php` into `mu-plugins`, debug display off) and run `WP_BASE_URL=http://your-site npm run test:e2e`. If Playwright's own Chromium isn't installed, `PW_CHROMIUM_PATH` points it at another one.
+
+CI runs the whole lot on every push and pull request.
+
 ```
 routemark.php                 plugin header, constants, bootstrap
 uninstall.php                 deletes the settings meta when the plugin is deleted
@@ -108,22 +162,33 @@ includes/
   class-routes-controller.php GET routemark/v1/routes
   class-route-source.php      works out which plugin/theme registered a route
   class-settings.php          per-user settings, GET/POST routemark/v1/settings
+  class-send-as.php           Send as: switching user for one request, GET routemark/v1/users
+  class-request-stats.php     query count, PHP time and memory for requests sent from the app
+  class-hooks.php             GET routemark/v1/hooks, who's hooked into a route
 src/                          the React app (TypeScript)
 scripts/zip.mjs               builds the install zip from an explicit file list
+tests/e2e/                    Playwright tests, plus the fixture plugins they run against
+.wp-env.json                  the test WordPress: Routemark plus the fixtures
 webpack.config.js             stock wp-scripts config, minification off
 postcss.config.js             same for CSS
-.wordpress-org/               icon, banners and screenshots for the plugin directory
+.wordpress-org/               icon, banners, screenshots and the Playground blueprint for the plugin directory
 ```
 
 ### How a few things work
 
 WordPress doesn't record who registered a route, so `Route_Source` looks at the route's callback, finds the file its class or function lives in and matches that against wp-includes, the plugins folder, mu-plugins and the theme. It uses the class of the actual object, not the class that declares the method, because lots of plugins extend `WP_REST_Posts_Controller` and should still get the credit. Symlinked plugin folders are mapped back through `$wp_plugin_paths`.
 
+For the report, the routes endpoint also tags each endpoint with how its permission is checked (`missing`, `open` for `__return_true`, or `check`) and which args declare nothing at all. That has to happen in PHP, because the callbacks are stripped before anything is sent to the browser. A typed arg isn't flagged even when its callbacks are set to `null`, because core's post controllers do exactly that for `title` and `content` and clean them up later. WordPress registers the index routes and `/batch/v1` itself without a permission callback, so those count as open and checked.
+
 Route patterns like `(?P<id>[\d]+)` become `{id}` by walking the string and counting parens. A single regex won't do it, because core's plugins route has a group nested inside the named one.
 
 Requests go through `@wordpress/api-fetch` with `parse: false`, so we get the raw `Response` for status, headers and timing. In that mode it throws the Response on 4xx/5xx instead of returning it, which `send()` catches.
 
 `Settings::schema()` is the one list of what each setting can be. It feeds the REST args, the defaults and the check when reading from user meta. The TypeScript `Settings` type mirrors it.
+
+The Hooks tab gets its list from `GET routemark/v1/hooks?route=…`. It only accepts a route that's actually registered, then works out what the route's controller handles: `post_type` or `taxonomy` (read from the controller, they're protected properties), `user` or `comment`. It fills those into core's hook name patterns (`rest_prepare_{s}`, `rest_{s}_query`, `rest_pre_insert_{s}` and so on) and reads the callbacks from `$wp_filter`, naming the plugin behind each one with the same lookup the route list uses.
+
+Server numbers come from `Request_Stats`. The app sends `X-Routemark-Stats: 1`. At priority 1 on `rest_pre_dispatch`, before any Send as switch, it checks you're an admin and notes the time and query count. At the very end of `rest_post_dispatch`, which is the last moment headers can be added, it puts the difference in an `X-Routemark-Stats` response header as JSON, along with the whole-request totals from `timer_float()` and `get_num_queries()`.
 
 ### Security
 
@@ -133,13 +198,23 @@ The only input is the settings endpoint. Its args use `rest_validate_request_arg
 
 All requests use cookie auth with the `wp_rest` nonce, which api-fetch sends as `X-WP-Nonce`. Every endpoint also checks `current_user_can( 'manage_options' )`.
 
+Send as is the one place we change who the current user is, so it's kept narrow. The app sends `X-Routemark-As` (a user ID, `0` for logged out) and `X-Routemark-Nonce` (a `routemark_send_as` nonce). In `rest_pre_dispatch`, which runs after WordPress has already checked the cookie and the `wp_rest` nonce, `Send_As` checks:
+- the header is a plain number;
+- the nonce belongs to the real user;
+- the real user has `manage_options`;
+- for anyone other than logged out, the real user also has `edit_user` on the target.
+
+If any of those fail you get a 403 `routemark_send_as_denied`. If they all pass it calls `wp_set_current_user()`, and switches back in `rest_pre_echo_response`, after embeds are resolved. It only acts on a REST request coming in over HTTP, never on an internal `rest_do_request()`, and only once per request, so batch sub-requests don't switch again. The response gets an `X-Routemark-As` header so the app can tell you if something else answered the request before the switch happened.
+
 Run `phpcs` in the repo root to check against the WordPress Coding Standards (it picks up `phpcs.xml.dist`). It should come back clean.
 
 ### Releasing
 
 1. Bump the version in `routemark.php` (header and `ROUTEMARK_VERSION`), `package.json` and `Stable tag` in `readme.txt`, and add a changelog entry to `readme.txt`.
-2. Commit, then `git tag v0.1.4 && git push --follow-tags`.
+2. Commit, then `git tag v0.3.1 && git push --follow-tags`.
 3. The release workflow checks the tag matches the version, builds the zip and attaches it to a GitHub release.
+
+Everything in `.wordpress-org/` goes in the `assets/` folder of the plugin's SVN repository on WordPress.org, not in the zip. That includes `blueprints/blueprint.json`, which gives the plugin page a Live Preview button: it opens Routemark in WordPress Playground, logged in, with an editor, an author and a subscriber to try Send as with.
 
 The zip only holds `routemark.php`, `uninstall.php`, `readme.txt`, `includes/`, `build/` and `licenses/`. The JS in `build/` is compiled but not minified, and `readme.txt` links back here for the source, which is what WordPress.org asks for. So keep this repo public.
 
@@ -167,8 +242,6 @@ The wordmark is set in Bricolage Grotesque. Everything else uses Atkinson Hyperl
 - TypeScript types generated from route schemas
 - OpenAPI export
 - Saved requests and environments (local, staging, live)
-- Sending as a different user or role
-- A report of routes with no schema or loose permission callbacks
 
 Routemark was called Restbench before its WordPress.org review. Same plugin, new name.
 

@@ -55,6 +55,17 @@ class Route_Source {
 	}
 
 	/**
+	 * Source for any callable, e.g. a filter callback.
+	 *
+	 * @param mixed $callback Any callable.
+	 * @return array|null { type: core|plugin|mu-plugin|theme, name: string }
+	 */
+	public function for_callback( $callback ) {
+		$file = $this->callback_file( $callback );
+		return $file ? $this->for_file( $file ) : null;
+	}
+
+	/**
 	 * Finds the file a callback lives in.
 	 *
 	 * @param mixed $callback Any callable.

@@ -41,5 +41,8 @@ final class Plugin {
 		( new Admin() )->register();
 		( new Routes_Controller() )->register();
 		( new Settings() )->register();
+		( new Send_As() )->register();
+		( new Request_Stats() )->register();
+		( new Hooks() )->register();
 	}
 }

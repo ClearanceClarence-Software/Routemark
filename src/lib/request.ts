@@ -1,6 +1,6 @@
 import apiFetch from '@wordpress/api-fetch';
 
-import type { Draft, HttpMethod, RouteArg, RouteInfo, Row, RunResult } from '../types';
+import type { Draft, HttpMethod, RouteArg, RouteInfo, Row, RunResult, SendAsUser, ServerStats } from '../types';
 import { endpointFor, routeMethods, routeToTemplate, templateParams } from './routes';
 
 let counter = 0;
@@ -149,7 +149,17 @@ async function toResult( response: Response, startedAt: number ): Promise< RunRe
 		// not JSON, that's fine, the Raw tab shows it
 	}
 
+	const ranAs = headers[ 'x-routemark-as' ];
+	let stats: ServerStats | null = null;
+	try {
+		stats = headers[ 'x-routemark-stats' ] ? ( JSON.parse( headers[ 'x-routemark-stats' ] ) as ServerStats ) : null;
+	} catch {
+		// something mangled the header, just don't show the numbers
+	}
+
 	return {
+		ranAs: ranAs === undefined ? null : Number( ranAs ),
+		stats,
 		status: response.status,
 		statusText: response.statusText,
 		durationMs: Math.round( performance.now() - startedAt ),
@@ -162,8 +172,15 @@ async function toResult( response: Response, startedAt: number ): Promise< RunRe
 }
 
 // Never throws. Network errors come back as status 0 so the UI has one path.
-export async function send( path: string, draft: Draft ): Promise< RunResult > {
+export async function send( path: string, draft: Draft, as: SendAsUser | null = null ): Promise< RunResult > {
 	const headers = activeHeaders( draft );
+	// Asks for query count, PHP time and memory. Only admins get them back.
+	headers[ 'X-Routemark-Stats' ] = '1';
+	if ( as ) {
+		// The server checks this nonce against you before it switches. See class-send-as.php.
+		headers[ 'X-Routemark-As' ] = String( as.id );
+		headers[ 'X-Routemark-Nonce' ] = window.routemarkSettings?.sendAs?.nonce ?? '';
+	}
 	const withBody = hasBody( draft.method ) && draft.body.trim() !== '';
 	if ( withBody && ! Object.keys( headers ).some( ( h ) => h.toLowerCase() === 'content-type' ) ) {
 		headers[ 'Content-Type' ] = 'application/json';
@@ -223,6 +240,8 @@ export function fullUrl( path: string ): string {
 // before it gets there: auth headers, and body or query fields named like
 // passwords or tokens. You'll have to type those again when you restore one.
 const SECRET = /pass(word)?|secret|token|auth|cookie|nonce|api[_-]?key|private/i;
+
+export const LOGGED_OUT: SendAsUser = { id: 0, name: '', role: '' };
 
 function scrub( value: unknown ): unknown {
 	if ( Array.isArray( value ) ) {

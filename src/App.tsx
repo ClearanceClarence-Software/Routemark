@@ -3,14 +3,16 @@ import { useCallback, useEffect, useMemo, useRef, useState } from '@wordpress/el
 import { __ } from '@wordpress/i18n';
 
 import Overview from './components/Overview';
+import ReportView from './components/ReportView';
 import SettingsView from './components/SettingsView';
 import Sidebar from './components/Sidebar';
 import { Icon, Mark } from './components/ui';
 import Workspace from './components/Workspace';
 import { useHashRoute, useStoredState } from './lib/hooks';
 import { filterRoutes, groupRoutes } from './lib/routes';
+import { LOGGED_OUT } from './lib/request';
 import { initialSettings, saveSettings } from './lib/settings';
-import type { Draft, Filters, HistoryEntry, RoutesResponse, Settings } from './types';
+import type { Draft, Filters, HistoryEntry, RoutesResponse, SendAsUser, Settings } from './types';
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
@@ -21,10 +23,15 @@ export default function App() {
 	const [ selected, setSelected ] = useHashRoute();
 	const [ settings, setSettings ] = useState< Settings >( initialSettings );
 	const [ saveStatus, setSaveStatus ] = useState< SaveStatus >( 'idle' );
-	const [ showSettings, setShowSettings ] = useState( false );
+	// Settings and the report take over the main area. null means the route view.
+	const [ panel, setPanel ] = useState< 'settings' | 'report' | null >( null );
+	const showSettings = panel === 'settings';
 	const [ history, setHistory ] = useStoredState< HistoryEntry[] >( `routemark.history.${ window.routemarkSettings?.userId ?? 0 }`, [] );
 	const [ filters, setFilters ] = useState< Filters >( { search: '', methods: [], publicOnly: false } );
 	const [ preset, setPreset ] = useState< { id: string; draft: Draft } | null >( null );
+	// Kept while you move between routes, but never saved: after a reload
+	// you're always back to sending as yourself.
+	const [ sendAs, setSendAs ] = useState< SendAsUser | null >( null );
 	const searchRef = useRef< HTMLInputElement >( null );
 	const saveTimer = useRef< number >( 0 );
 	const theme = settings.theme;
@@ -87,7 +94,7 @@ export default function App() {
 			const typing = [ 'INPUT', 'TEXTAREA', 'SELECT' ].includes( t.tagName ) || t.isContentEditable;
 			if ( e.key === '/' && ! typing ) {
 				e.preventDefault();
-				setShowSettings( false );
+				setPanel( null );
 				searchRef.current?.focus();
 				searchRef.current?.select();
 			}
@@ -107,7 +114,7 @@ export default function App() {
 	const order = useMemo( () => groups.flatMap( ( g ) => g.routes.map( ( r ) => r.route ) ), [ groups ] );
 
 	const pick = ( route: string | null ) => {
-		setShowSettings( false );
+		setPanel( null );
 		setPreset( null );
 		setSelected( route );
 	};
@@ -161,6 +168,15 @@ export default function App() {
 				</button>
 				<button
 					type="button"
+					className={ `rmk-btn rmk-btn--ghost${ panel === 'report' ? ' is-active' : '' }` }
+					aria-pressed={ panel === 'report' }
+					onClick={ () => setPanel( panel === 'report' ? null : 'report' ) }
+				>
+					<Icon name="shield" size={ 16 } />
+					<span className="rmk-hide-sm">{ __( 'Report', 'routemark' ) }</span>
+				</button>
+				<button
+					type="button"
 					className="rmk-btn rmk-btn--icon rmk-btn--ghost"
 					onClick={ () => updateSettings( { theme: theme === 'light' ? 'dark' : 'light' } ) }
 					title={ themeLabel }
@@ -172,7 +188,7 @@ export default function App() {
 					type="button"
 					className={ `rmk-btn rmk-btn--ghost${ showSettings ? ' is-active' : '' }` }
 					aria-pressed={ showSettings }
-					onClick={ () => setShowSettings( ! showSettings ) }
+					onClick={ () => setPanel( showSettings ? null : 'settings' ) }
 				>
 					<Icon name="sliders" size={ 16 } />
 					<span className="rmk-hide-sm">{ __( 'Settings', 'routemark' ) }</span>
@@ -185,13 +201,13 @@ export default function App() {
 					shown={ filtered.length }
 					total={ visible.length }
 					filters={ filters }
-					selected={ showSettings ? null : selected }
+					selected={ panel ? null : selected }
 					history={ history }
 					searchRef={ searchRef }
 					onFilters={ setFilters }
 					onSelect={ pick }
 					onRestore={ ( entry ) => {
-						setShowSettings( false );
+						setPanel( null );
 						setSelected( entry.route );
 						setPreset( { id: entry.id, draft: entry.draft } );
 					} }
@@ -233,7 +249,19 @@ export default function App() {
 						/>
 					) }
 
-					{ data && ! showSettings && ! current && (
+					{ data && panel === 'report' && (
+						<ReportView
+							routes={ data.routes }
+							onOpen={ ( route, loggedOut ) => {
+								if ( loggedOut ) {
+									setSendAs( LOGGED_OUT );
+								}
+								pick( route );
+							} }
+						/>
+					) }
+
+					{ data && ! panel && ! current && (
 						<Overview
 							routes={ data.routes }
 							namespaces={ data.namespaces }
@@ -251,12 +279,14 @@ export default function App() {
 						/>
 					) }
 
-					{ data && ! showSettings && current && (
+					{ data && ! panel && current && (
 						<Workspace
 							key={ current.route + ( preset?.id ?? '' ) }
 							route={ current }
 							settings={ settings }
 							preset={ preset?.draft ?? null }
+							sendAs={ sendAs }
+							onSendAs={ setSendAs }
 							onRecord={ record }
 						/>
 					) }

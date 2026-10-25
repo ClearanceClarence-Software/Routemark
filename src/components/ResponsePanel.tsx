@@ -1,9 +1,10 @@
 import { useState } from '@wordpress/element';
-import { __, sprintf } from '@wordpress/i18n';
+import { __, _n, sprintf } from '@wordpress/i18n';
 
 import { formatBytes } from '../lib/request';
-import type { RunResult } from '../types';
+import type { RunResult, SendAsUser } from '../types';
 import JsonView from './JsonView';
+import { sendAsLabel } from './SendAs';
 import { CopyButton, Icon, Tabs } from './ui';
 
 type View = 'pretty' | 'raw' | 'headers';
@@ -26,7 +27,14 @@ function wpError( result: RunResult ): { code: string; message: string } | null 
 	return null;
 }
 
-export default function ResponsePanel( { result, running, jsonDepth = 2 }: { result: RunResult | null; running: boolean; jsonDepth?: number } ) {
+interface Props {
+	result: RunResult | null;
+	sentAs?: SendAsUser | null;
+	running: boolean;
+	jsonDepth?: number;
+}
+
+export default function ResponsePanel( { result, sentAs = null, running, jsonDepth = 2 }: Props ) {
 	const [ view, setView ] = useState< View >( 'pretty' );
 	const [ depth, setDepth ] = useState( { open: jsonDepth, rev: 0 } );
 
@@ -51,6 +59,10 @@ export default function ResponsePanel( { result, running, jsonDepth = 2 }: { res
 	const headerCount = Object.keys( result.headers ).length;
 	const total = result.headers[ 'x-wp-total' ];
 	const pages = result.headers[ 'x-wp-totalpages' ];
+	// The server says who it ran as. If we asked for someone and that header
+	// is missing (and it wasn't our own refusal), something else answered the
+	// request first, so it most likely ran as you.
+	const switchMissed = !! sentAs && result.ranAs !== sentAs.id && error?.code !== 'routemark_send_as_denied' && result.status !== 0;
 	const pretty = result.isJson ? JSON.stringify( result.json, null, 2 ) : result.raw;
 
 	return (
@@ -64,6 +76,12 @@ export default function ResponsePanel( { result, running, jsonDepth = 2 }: { res
 					<Icon name="clock" size={ 13 } /> { result.durationMs } ms
 				</span>
 				<span className="rmk-response-stat">{ formatBytes( result.sizeBytes ) }</span>
+				{ sentAs && ! switchMissed && (
+					<span className="rmk-response-stat rmk-response-as">
+						<Icon name={ sentAs.id === 0 ? 'globe' : 'user' } size={ 13 } />
+						{ /* translators: %s: user name, or "Logged out" */ sprintf( __( 'as %s', 'routemark' ), sendAsLabel( sentAs ) ) }
+					</span>
+				) }
 				{ total !== undefined && (
 					<span className="rmk-response-stat">
 						{ sprintf(
@@ -74,7 +92,55 @@ export default function ResponsePanel( { result, running, jsonDepth = 2 }: { res
 						) }
 					</span>
 				) }
+				{ result.stats && (
+					<span className="rmk-response-server">
+						<span
+							className="rmk-response-stat"
+							title={ sprintf(
+								/* translators: %d: database queries for the whole request */
+								__( 'Database queries while WordPress handled this request. %d for the whole request, including loading WordPress and plugins.', 'routemark' ),
+								result.stats.queriesTotal
+							) }
+						>
+							<Icon name="database" size={ 13 } />
+							{ sprintf(
+								/* translators: %d: number of database queries */
+								_n( '%d query', '%d queries', result.stats.queries, 'routemark' ),
+								result.stats.queries
+							) }
+						</span>
+						<span
+							className="rmk-response-stat"
+							title={ sprintf(
+								/* translators: %s: milliseconds */
+								__( 'Time in PHP from dispatch until the response was ready, not counting _embed. %s ms for the whole request, including loading WordPress.', 'routemark' ),
+								String( result.stats.totalMs )
+							) }
+						>
+							<Icon name="cpu" size={ 13 } />
+							{ /* translators: %s: milliseconds */ sprintf( __( 'PHP %s ms', 'routemark' ), String( Math.round( result.stats.handlerMs ) ) ) }
+						</span>
+						<span className="rmk-response-stat" title={ __( 'Peak PHP memory for the whole request.', 'routemark' ) }>
+							{ formatBytes( result.stats.peakMemory ) }
+						</span>
+					</span>
+				) }
 			</div>
+
+			{ switchMissed && (
+				<div className="rmk-callout rmk-callout--warn">
+					<Icon name="alert" size={ 16 } />
+					<div>
+						<p>
+							{ sprintf(
+								/* translators: %s: user name, or "Logged out" */
+								__( 'This was meant to run as %s, but the server didn\'t confirm the switch. Another plugin probably answered the request first, so treat this response as yours.', 'routemark' ),
+								sendAsLabel( sentAs )
+							) }
+						</p>
+					</div>
+				</div>
+			) }
 
 			{ error && (
 				<div className="rmk-callout rmk-callout--error">

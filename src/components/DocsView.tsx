@@ -80,7 +80,12 @@ function EndpointDocs( { endpoint }: { endpoint: Endpoint } ) {
 				{ endpoint.methods.map( ( m ) => (
 					<Method key={ m } method={ m } />
 				) ) }
-				{ endpoint.isPublic ? (
+				{ endpoint.permission === 'missing' && (
+					<span className="rmk-badge rmk-badge--danger" title={ __( 'Registered without a permission_callback, so anyone can call it.', 'routemark' ) }>
+						<Icon name="alert" size={ 12 } /> { __( 'No permission check', 'routemark' ) }
+					</span>
+				) }
+				{ endpoint.permission === 'missing' ? null : endpoint.isPublic ? (
 					<span className="rmk-badge rmk-badge--public">
 						<Icon name="globe" size={ 12 } /> { __( 'No login needed', 'routemark' ) }
 					</span>

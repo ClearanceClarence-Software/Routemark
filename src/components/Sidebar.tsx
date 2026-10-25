@@ -5,6 +5,7 @@ import type { RefObject } from 'react';
 import { groupSource, isPublicRoute, localPath, routeMethods, type RouteGroup } from '../lib/routes';
 import { METHODS } from '../types';
 import type { Filters, HistoryEntry, HttpMethod } from '../types';
+import { sendAsLabel } from './SendAs';
 import { Icon, Method, PathText } from './ui';
 
 interface Props {
@@ -248,6 +249,11 @@ export default function Sidebar( {
 												<span className={ `rmk-status-dot rmk-status--${ Math.floor( entry.status / 100 ) }xx` }>
 													{ entry.status || 'ERR' }
 												</span>
+												{ entry.as && (
+													<span className="rmk-history-as" title={ __( 'Sent as', 'routemark' ) }>
+														{ sendAsLabel( entry.as ) }
+													</span>
+												) }
 												<span className="rmk-history-time">{ timeAgo( entry.at ) }</span>
 											</span>
 											<span className="rmk-history-path">{ entry.path }</span>

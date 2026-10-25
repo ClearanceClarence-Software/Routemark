@@ -30,7 +30,10 @@ export default function Overview( { routes, namespaces, onPick, onNamespace, hid
 	const open = useMemo(
 		() =>
 			routes.flatMap( ( r ) =>
-				r.endpoints.filter( ( e ) => e.isPublic ).map( ( e ) => ( { route: r, methods: e.methods } ) )
+				// Skip /wc/v3 and friends, every namespace has one and they're always public.
+				r.route === `/${ r.namespace }`
+					? []
+					: r.endpoints.filter( ( e ) => e.isPublic ).map( ( e ) => ( { route: r, methods: e.methods } ) )
 			),
 		[ routes ]
 	);
@@ -95,7 +98,7 @@ export default function Overview( { routes, namespaces, onPick, onNamespace, hid
 				<h3 className="rmk-section-title">{ __( 'Open to everyone', 'routemark' ) }</h3>
 				<p className="rmk-muted rmk-note">
 					{ createInterpolateElement(
-						__( "These endpoints use <code>__return_true</code> as their permission check, so they work without logging in. Most are fine (oEmbed, the index), but it's worth knowing which ones they are.", 'routemark' ),
+						__( "These endpoints work without logging in, either because their permission check is <code>__return_true</code> or because they don't have one. Most are fine (oEmbed, the index), but it's worth knowing which ones they are. The Report at the top goes through the rest.", 'routemark' ),
 						{ code: <code /> }
 					) }
 				</p>

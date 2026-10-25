@@ -133,6 +133,11 @@ class Admin {
 					// Inlined so the page opens with the right theme and options
 					// instead of flashing defaults while it fetches them.
 					'settings' => Settings::for_user( get_current_user_id() ),
+					// Goes with X-Routemark-As, see class-send-as.php.
+					'sendAs'   => array(
+						'nonce' => wp_create_nonce( Send_As::NONCE_ACTION ),
+						'name'  => wp_get_current_user()->display_name,
+					),
 				),
 				// This lands inside a <script> tag, so < > & are written as \u003C etc.
 				// Nothing in here can close the tag, whatever a value contains.

@@ -56,13 +56,69 @@ class Routes_Controller {
 			self::REST_NAMESPACE,
 			'/routes',
 			array(
-				'methods'             => WP_REST_Server::READABLE,
-				'callback'            => array( $this, 'get_routes' ),
-				'permission_callback' => array( $this, 'can_access' ),
-				// Keeps it out of the public /wp-json/ route list. It's checked per
-				// endpoint, and a route only disappears once all of them have it.
-				'show_in_index'       => false,
+				array(
+					'methods'             => WP_REST_Server::READABLE,
+					'callback'            => array( $this, 'get_routes' ),
+					'permission_callback' => array( $this, 'can_access' ),
+					// Keeps it out of the public /wp-json/ route list. It's checked per
+					// endpoint, and a route only disappears once all of them have it.
+					'show_in_index'       => false,
+				),
+				'schema' => array( $this, 'get_schema' ),
 			)
+		);
+	}
+
+	/**
+	 * What GET routemark/v1/routes returns. Kept short, the TypeScript types
+	 * in src/types.ts have the details.
+	 *
+	 * @return array
+	 */
+	public function get_schema(): array {
+		return array(
+			'$schema'    => 'http://json-schema.org/draft-04/schema#',
+			'title'      => 'routemark-routes',
+			'type'       => 'object',
+			'properties' => array(
+				'namespaces' => array(
+					'description' => __( 'Every registered namespace.', 'routemark' ),
+					'type'        => 'array',
+					'items'       => array( 'type' => 'string' ),
+					'readonly'    => true,
+				),
+				'routes'     => array(
+					'description' => __( 'Every registered route.', 'routemark' ),
+					'type'        => 'array',
+					'readonly'    => true,
+					'items'       => array(
+						'type'       => 'object',
+						'properties' => array(
+							'route'     => array(
+								'description' => __( 'The route pattern as registered.', 'routemark' ),
+								'type'        => 'string',
+							),
+							'namespace' => array(
+								'description' => __( 'Namespace the route belongs to.', 'routemark' ),
+								'type'        => 'string',
+							),
+							'endpoints' => array(
+								'description' => __( 'One entry per set of methods: args, and how permission is checked.', 'routemark' ),
+								'type'        => 'array',
+								'items'       => array( 'type' => 'object' ),
+							),
+							'schema'    => array(
+								'description' => __( "The route's own schema, if it has one.", 'routemark' ),
+								'type'        => array( 'object', 'null' ),
+							),
+							'source'    => array(
+								'description' => __( 'The plugin, theme or part of WordPress that registered it.', 'routemark' ),
+								'type'        => array( 'object', 'null' ),
+							),
+						),
+					),
+				),
+			),
 		);
 	}
 
@@ -95,10 +151,17 @@ class Routes_Controller {
 
 			$endpoints = array();
 			foreach ( $handlers as $handler ) {
+				$args       = (array) ( $handler['args'] ?? array() );
+				$permission = $this->permission_kind( $handler['permission_callback'] ?? null, $route, (string) ( $options['namespace'] ?? '' ) );
+
 				$endpoints[] = array(
-					'methods'  => array_keys( array_filter( (array) ( $handler['methods'] ?? array() ) ) ),
-					'args'     => $this->normalize_args( (array) ( $handler['args'] ?? array() ) ),
-					'isPublic' => $this->is_public( $handler['permission_callback'] ?? null ),
+					'methods'       => array_keys( array_filter( (array) ( $handler['methods'] ?? array() ) ) ),
+					'args'          => $this->normalize_args( $args ),
+					'isPublic'      => 'check' !== $permission,
+					// For the report. Worked out here because the callbacks are
+					// stripped before the args go out.
+					'permission'    => $permission,
+					'uncheckedArgs' => $this->unchecked_args( $args ),
 				);
 			}
 
@@ -204,13 +267,62 @@ class Routes_Controller {
 	}
 
 	/**
-	 * Only catches the obvious case (__return_true). A callback that always
-	 * returns true in some roundabout way won't be flagged. Good enough for now.
+	 * How an endpoint decides who may call it:
 	 *
-	 * @param mixed $callback Permission callback.
-	 * @return bool
+	 * - missing: no permission_callback. WordPress logs a notice since 5.5 but
+	 *   still runs the endpoint for anyone (see respond_to_request()).
+	 * - open:    __return_true, so open on purpose.
+	 * - check:   some other callback. We can't tell what it allows, only that
+	 *   it's there. One that always returns true in a roundabout way still
+	 *   counts as a check.
+	 *
+	 * @param mixed  $callback        Permission callback.
+	 * @param string $route           Route regex.
+	 * @param string $route_namespace Route namespace.
+	 * @return string
 	 */
-	private function is_public( $callback ): bool {
-		return '__return_true' === $callback;
+	private function permission_kind( $callback, string $route, string $route_namespace ): string {
+		if ( empty( $callback ) ) {
+			// WordPress registers these itself, without a permission callback.
+			// The index routes are public on purpose, and batch checks each
+			// request inside it separately.
+			if ( '/batch/v1' === $route ) {
+				return 'check';
+			}
+			if ( '/' === $route || '/' . $route_namespace === $route ) {
+				return 'open';
+			}
+			return 'missing';
+		}
+		return '__return_true' === $callback ? 'open' : 'check';
+	}
+
+	/**
+	 * Args that declare nothing WordPress could check them with: no type, no
+	 * validate_callback, no sanitize_callback. Whatever is sent reaches the
+	 * handler as is.
+	 *
+	 * A typed arg is checked by WordPress on its own (rest_parse_request_arg).
+	 * We also leave alone typed args with the callbacks set to null on
+	 * purpose. Core's post controllers do that for title and content, because
+	 * they clean those up themselves later, and so does every plugin that
+	 * extends them.
+	 *
+	 * @param array $args Raw endpoint args.
+	 * @return string[]
+	 */
+	private function unchecked_args( array $args ): array {
+		$unchecked = array();
+
+		foreach ( $args as $name => $arg ) {
+			if ( ! is_array( $arg ) ) {
+				continue;
+			}
+			if ( empty( $arg['type'] ) && empty( $arg['validate_callback'] ) && empty( $arg['sanitize_callback'] ) ) {
+				$unchecked[] = (string) $name;
+			}
+		}
+
+		return $unchecked;
 	}
 }

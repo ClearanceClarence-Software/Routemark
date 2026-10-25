@@ -5,25 +5,31 @@ import { buildPath, fullUrl, hasBody, jsonError, missingParams, newDraft, redact
 import { endpointFor, routeMethods, routeToTemplate, sourceLabel, templateParams, typeLabel } from '../lib/routes';
 import { buildSnippet, SNIPPET_LABELS, type SnippetKind } from '../lib/snippets';
 import { needsConfirm } from '../lib/settings';
-import type { Draft, HistoryEntry, HttpMethod, RouteInfo, RunResult, Settings } from '../types';
+import type { Draft, HistoryEntry, HttpMethod, RouteInfo, RunResult, SendAsUser, Settings } from '../types';
 import CodeEditor from './CodeEditor';
 import DocsView from './DocsView';
+import HooksView from './HooksView';
 import KeyValueEditor from './KeyValueEditor';
 import ResponsePanel from './ResponsePanel';
+import SendAs from './SendAs';
 import { CopyButton, Icon, PathText, Tabs } from './ui';
 
-type Tab = 'params' | 'body' | 'headers' | 'docs' | 'code';
+type Tab = 'params' | 'body' | 'headers' | 'docs' | 'hooks' | 'code';
 
 interface Props {
 	route: RouteInfo;
 	settings: Settings;
 	preset: Draft | null;
+	sendAs: SendAsUser | null;
+	onSendAs: ( as: SendAsUser | null ) => void;
 	onRecord: ( entry: HistoryEntry ) => void;
 }
 
-export default function Workspace( { route, settings, preset, onRecord }: Props ) {
+export default function Workspace( { route, settings, preset, sendAs, onSendAs, onRecord }: Props ) {
 	const [ draft, setDraft ] = useState< Draft >( () => preset ?? newDraft( route, undefined, settings.suggestParams ) );
 	const [ result, setResult ] = useState< RunResult | null >( null );
+	// Who the shown response was sent as, which may not be who's picked now.
+	const [ resultAs, setResultAs ] = useState< SendAsUser | null >( null );
 	const [ running, setRunning ] = useState( false );
 	const [ snippet, setSnippet ] = useState< SnippetKind >( settings.snippetLanguage );
 	const [ armed, setArmed ] = useState( false );
@@ -48,7 +54,7 @@ export default function Workspace( { route, settings, preset, onRecord }: Props 
 	const confirmFirst = needsConfirm( settings.confirmWrites, draft.method );
 
 	// Anything you change after the first click disarms it again.
-	useEffect( () => setArmed( false ), [ draft ] );
+	useEffect( () => setArmed( false ), [ draft, sendAs ] );
 	useEffect( () => {
 		if ( ! armed ) {
 			return;
@@ -67,8 +73,9 @@ export default function Workspace( { route, settings, preset, onRecord }: Props 
 		}
 		setArmed( false );
 		setRunning( true );
-		const res = await send( path, draft );
+		const res = await send( path, draft, sendAs );
 		setResult( res );
+		setResultAs( sendAs );
 		setRunning( false );
 		onRecord( {
 			id: uid(),
@@ -78,8 +85,9 @@ export default function Workspace( { route, settings, preset, onRecord }: Props 
 			status: res.status,
 			durationMs: res.durationMs,
 			draft: redactDraft( draft ),
+			as: sendAs,
 		} );
-	}, [ canSend, confirmFirst, armed, path, draft, route.route, onRecord ] );
+	}, [ canSend, confirmFirst, armed, path, draft, sendAs, route.route, onRecord ] );
 
 	// Ctrl/Cmd+Enter sends, from anywhere on the page
 	const runRef = useRef( run );
@@ -119,7 +127,11 @@ export default function Workspace( { route, settings, preset, onRecord }: Props 
 					</h2>
 				</div>
 				<div className="rmk-ws-badges">
-					{ endpoint?.isPublic ? (
+					{ endpoint?.permission === 'missing' ? (
+						<span className="rmk-badge rmk-badge--danger" title={ __( 'Registered without a permission_callback, so anyone can call it.', 'routemark' ) }>
+							<Icon name="alert" size={ 12 } /> { __( 'No permission check', 'routemark' ) }
+						</span>
+					) : endpoint?.isPublic ? (
 						<span className="rmk-badge rmk-badge--public">
 							<Icon name="globe" size={ 12 } /> { __( 'Public', 'routemark' ) }
 						</span>
@@ -172,6 +184,8 @@ export default function Workspace( { route, settings, preset, onRecord }: Props 
 						</button>
 					</form>
 
+					<SendAs value={ sendAs } onChange={ onSendAs } />
+
 					{ ( missing.length > 0 || bodyError || destructive ) && (
 						<div className="rmk-address-notes">
 							{ missing.length > 0 && (
@@ -208,6 +222,7 @@ export default function Workspace( { route, settings, preset, onRecord }: Props 
 							{ id: 'body', label: __( 'Body', 'routemark' ), hidden: ! hasBody( draft.method ) },
 							{ id: 'headers', label: __( 'Headers', 'routemark' ), count: enabledHeaders },
 							{ id: 'docs', label: __( 'Docs', 'routemark' ) },
+							{ id: 'hooks', label: __( 'Hooks', 'routemark' ) },
 							{ id: 'code', label: __( 'Code', 'routemark' ) },
 						] }
 					/>
@@ -306,6 +321,8 @@ export default function Workspace( { route, settings, preset, onRecord }: Props 
 
 						{ tab === 'docs' && <DocsView route={ route } /> }
 
+						{ tab === 'hooks' && <HooksView route={ route } /> }
+
 						{ tab === 'code' && (
 							<div className="rmk-section">
 								<div className="rmk-section-bar">
@@ -331,7 +348,7 @@ export default function Workspace( { route, settings, preset, onRecord }: Props 
 					</div>
 				</section>
 
-				<ResponsePanel result={ result } running={ running } jsonDepth={ settings.jsonDepth } />
+				<ResponsePanel result={ result } sentAs={ resultAs } running={ running } jsonDepth={ settings.jsonDepth } />
 			</div>
 		</div>
 	);
