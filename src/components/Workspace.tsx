@@ -103,14 +103,14 @@ export default function Workspace( { route, settings, preset, onRecord }: Props 
 	};
 
 	return (
-		<div className="rb-workspace">
-			<header className="rb-ws-head">
-				<div className="rb-ws-title">
-					<p className="rb-eyebrow">
-						{ route.namespace || __( 'root', 'restbench' ) }
+		<div className="rmk-workspace">
+			<header className="rmk-ws-head">
+				<div className="rmk-ws-title">
+					<p className="rmk-eyebrow">
+						{ route.namespace || __( 'root', 'routemark' ) }
 						{ source && (
-							<span className="rb-ws-source">
-								{ /* translators: %s: plugin, theme or "WordPress" */ sprintf( __( 'from %s', 'restbench' ), source ) }
+							<span className="rmk-ws-source">
+								{ /* translators: %s: plugin, theme or "WordPress" */ sprintf( __( 'from %s', 'routemark' ), source ) }
 							</span>
 						) }
 					</p>
@@ -118,34 +118,34 @@ export default function Workspace( { route, settings, preset, onRecord }: Props 
 						<PathText template={ template } />
 					</h2>
 				</div>
-				<div className="rb-ws-badges">
+				<div className="rmk-ws-badges">
 					{ endpoint?.isPublic ? (
-						<span className="rb-badge rb-badge--public">
-							<Icon name="globe" size={ 12 } /> { __( 'Public', 'restbench' ) }
+						<span className="rmk-badge rmk-badge--public">
+							<Icon name="globe" size={ 12 } /> { __( 'Public', 'routemark' ) }
 						</span>
 					) : (
-						<span className="rb-badge">
-							<Icon name="lock" size={ 12 } /> { __( 'Needs permission', 'restbench' ) }
+						<span className="rmk-badge">
+							<Icon name="lock" size={ 12 } /> { __( 'Needs permission', 'routemark' ) }
 						</span>
 					) }
 				</div>
 			</header>
 
-			<div className="rb-ws-split">
-				<section className="rb-request">
+			<div className="rmk-ws-split">
+				<section className="rmk-request">
 					<form
-						className="rb-address"
+						className="rmk-address"
 						onSubmit={ ( e ) => {
 							e.preventDefault();
 							run();
 						} }
 					>
-						<label className="screen-reader-text" htmlFor="rb-method">
-							{ __( 'Method', 'restbench' ) }
+						<label className="screen-reader-text" htmlFor="rmk-method">
+							{ __( 'Method', 'routemark' ) }
 						</label>
 						<select
-							id="rb-method"
-							className={ `rb-address-method rb-method--${ draft.method.toLowerCase() }` }
+							id="rmk-method"
+							className={ `rmk-address-method rmk-method--${ draft.method.toLowerCase() }` }
 							value={ draft.method }
 							onChange={ ( e ) => setMethod( e.target.value as HttpMethod ) }
 							disabled={ methods.length < 2 }
@@ -156,80 +156,80 @@ export default function Workspace( { route, settings, preset, onRecord }: Props 
 								</option>
 							) ) }
 						</select>
-						<div className="rb-address-path" title={ fullUrl( path ) }>
+						<div className="rmk-address-path" title={ fullUrl( path ) }>
 							<PathText template={ path } />
 						</div>
-						<CopyButton text={ fullUrl( path ) } label={ __( 'URL', 'restbench' ) } />
+						<CopyButton text={ fullUrl( path ) } label={ __( 'URL', 'routemark' ) } />
 						<button
 							type="submit"
-							className={ `rb-btn rb-btn--primary${ destructive ? ' rb-btn--danger-fill' : '' }${ armed ? ' is-armed' : '' }` }
+							className={ `rmk-btn rmk-btn--primary${ destructive ? ' rmk-btn--danger-fill' : '' }${ armed ? ' is-armed' : '' }` }
 							disabled={ ! canSend }
 						>
-							{ running ? <span className="rb-spinner" /> : <Icon name={ armed ? 'alert' : 'send' } size={ 15 } /> }
+							{ running ? <span className="rmk-spinner" /> : <Icon name={ armed ? 'alert' : 'send' } size={ 15 } /> }
 							{ armed
-								? /* translators: %s: HTTP method */ sprintf( __( 'Click again to %s', 'restbench' ), draft.method )
-								: __( 'Send', 'restbench' ) }
+								? /* translators: %s: HTTP method */ sprintf( __( 'Click again to %s', 'routemark' ), draft.method )
+								: __( 'Send', 'routemark' ) }
 						</button>
 					</form>
 
 					{ ( missing.length > 0 || bodyError || destructive ) && (
-						<div className="rb-address-notes">
+						<div className="rmk-address-notes">
 							{ missing.length > 0 && (
-								<p className="rb-hint">
+								<p className="rmk-hint">
 									<Icon name="alert" size={ 14 } />
 									{ sprintf(
 										/* translators: %s: list of path parameters */
-										__( 'Fill in %s under Params before sending.', 'restbench' ),
+										__( 'Fill in %s under Params before sending.', 'routemark' ),
 										missing.map( ( m ) => `{${ m }}` ).join( ', ' )
 									) }
 								</p>
 							) }
 							{ bodyError && (
-								<p className="rb-hint rb-hint--error">
+								<p className="rmk-hint rmk-hint--error">
 									<Icon name="alert" size={ 14 } />
-									{ __( 'The body is not valid JSON:', 'restbench' ) } { bodyError }
+									{ __( 'The body is not valid JSON:', 'routemark' ) } { bodyError }
 								</p>
 							) }
 							{ destructive && missing.length === 0 && (
-								<p className="rb-hint rb-hint--error">
+								<p className="rmk-hint rmk-hint--error">
 									<Icon name="alert" size={ 14 } />
-									{ __( 'Careful, this is a real DELETE and it runs against this site.', 'restbench' ) }
+									{ __( 'Careful, this is a real DELETE and it runs against this site.', 'routemark' ) }
 								</p>
 							) }
 						</div>
 					) }
 
 					<Tabs< Tab >
-						label={ __( 'Request', 'restbench' ) }
+						label={ __( 'Request', 'routemark' ) }
 						active={ tab }
 						onChange={ setTab }
 						tabs={ [
-							{ id: 'params', label: __( 'Params', 'restbench' ), count: params.length + enabledQuery },
-							{ id: 'body', label: __( 'Body', 'restbench' ), hidden: ! hasBody( draft.method ) },
-							{ id: 'headers', label: __( 'Headers', 'restbench' ), count: enabledHeaders },
-							{ id: 'docs', label: __( 'Docs', 'restbench' ) },
-							{ id: 'code', label: __( 'Code', 'restbench' ) },
+							{ id: 'params', label: __( 'Params', 'routemark' ), count: params.length + enabledQuery },
+							{ id: 'body', label: __( 'Body', 'routemark' ), hidden: ! hasBody( draft.method ) },
+							{ id: 'headers', label: __( 'Headers', 'routemark' ), count: enabledHeaders },
+							{ id: 'docs', label: __( 'Docs', 'routemark' ) },
+							{ id: 'code', label: __( 'Code', 'routemark' ) },
 						] }
 					/>
 
-					<div className="rb-tab-panel">
+					<div className="rmk-tab-panel">
 						{ tab === 'params' && (
 							<>
 								{ params.length > 0 && (
-									<div className="rb-section">
-										<h4 className="rb-label">{ __( 'Path parameters', 'restbench' ) }</h4>
-										<div className="rb-pathparams">
+									<div className="rmk-section">
+										<h4 className="rmk-label">{ __( 'Path parameters', 'routemark' ) }</h4>
+										<div className="rmk-pathparams">
 											{ params.map( ( p ) => {
 												const arg = endpoint?.args[ p ];
 												return (
-													<label key={ p } className="rb-pathparam">
-														<span className="rb-pathparam-name">
+													<label key={ p } className="rmk-pathparam">
+														<span className="rmk-pathparam-name">
 															<code>{ `{${ p }}` }</code>
-															{ arg && <span className="rb-kv-type">{ typeLabel( arg.type, arg.format ) }</span> }
+															{ arg && <span className="rmk-kv-type">{ typeLabel( arg.type, arg.format ) }</span> }
 														</span>
 														<input
 															type="text"
-															className={ `rb-input rb-input--mono${ draft.pathParams[ p ] ? '' : ' is-missing' }` }
+															className={ `rmk-input rmk-input--mono${ draft.pathParams[ p ] ? '' : ' is-missing' }` }
 															value={ draft.pathParams[ p ] ?? '' }
 															placeholder={ arg?.description ?? p }
 															onChange={ ( e ) =>
@@ -243,46 +243,46 @@ export default function Workspace( { route, settings, preset, onRecord }: Props 
 									</div>
 								) }
 
-								<div className="rb-section">
-									<h4 className="rb-label">{ __( 'Query parameters', 'restbench' ) }</h4>
+								<div className="rmk-section">
+									<h4 className="rmk-label">{ __( 'Query parameters', 'routemark' ) }</h4>
 									{ hasBody( draft.method ) && draft.query.length === 0 && (
-										<p className="rb-muted rb-note">
-											{ __( 'Arguments for this method go in the Body tab. Query params still work if you need them.', 'restbench' ) }
+										<p className="rmk-muted rmk-note">
+											{ __( 'Arguments for this method go in the Body tab. Query params still work if you need them.', 'routemark' ) }
 										</p>
 									) }
 									<KeyValueEditor
 										rows={ draft.query }
 										onChange={ ( query ) => setDraft( { ...draft, query } ) }
-										keyPlaceholder={ __( 'name', 'restbench' ) }
-										addLabel={ __( 'Add query parameter', 'restbench' ) }
+										keyPlaceholder={ __( 'name', 'routemark' ) }
+										addLabel={ __( 'Add query parameter', 'routemark' ) }
 									/>
 								</div>
 							</>
 						) }
 
 						{ tab === 'body' && (
-							<div className="rb-section">
-								<div className="rb-section-bar">
-									<h4 className="rb-label">{ __( 'JSON body', 'restbench' ) }</h4>
-									<span className="rb-spacer" />
+							<div className="rmk-section">
+								<div className="rmk-section-bar">
+									<h4 className="rmk-label">{ __( 'JSON body', 'routemark' ) }</h4>
+									<span className="rmk-spacer" />
 									<button
 										type="button"
-										className="rb-btn rb-btn--ghost"
+										className="rmk-btn rmk-btn--ghost"
 										onClick={ () => setDraft( { ...draft, body: sampleBody( route, draft.method ) } ) }
 									>
-										<Icon name="wand" size={ 14 } /> { __( 'Insert example', 'restbench' ) }
+										<Icon name="wand" size={ 14 } /> { __( 'Insert example', 'routemark' ) }
 									</button>
 									<button
 										type="button"
-										className="rb-btn rb-btn--ghost"
+										className="rmk-btn rmk-btn--ghost"
 										disabled={ !! bodyError || draft.body.trim() === '' }
 										onClick={ () => setDraft( { ...draft, body: JSON.stringify( JSON.parse( draft.body ), null, 2 ) } ) }
 									>
-										{ __( 'Format', 'restbench' ) }
+										{ __( 'Format', 'routemark' ) }
 									</button>
 								</div>
 								<CodeEditor
-									label={ __( 'JSON body', 'restbench' ) }
+									label={ __( 'JSON body', 'routemark' ) }
 									value={ draft.body }
 									onChange={ ( body ) => setDraft( { ...draft, body } ) }
 									onSubmit={ run }
@@ -291,15 +291,15 @@ export default function Workspace( { route, settings, preset, onRecord }: Props 
 						) }
 
 						{ tab === 'headers' && (
-							<div className="rb-section">
-								<p className="rb-muted rb-note">
-									{ __( 'The REST nonce is added for you, so you only need this for anything extra.', 'restbench' ) }
+							<div className="rmk-section">
+								<p className="rmk-muted rmk-note">
+									{ __( 'The REST nonce is added for you, so you only need this for anything extra.', 'routemark' ) }
 								</p>
 								<KeyValueEditor
 									rows={ draft.headers }
 									onChange={ ( headers ) => setDraft( { ...draft, headers } ) }
-									keyPlaceholder={ __( 'Header-Name', 'restbench' ) }
-									addLabel={ __( 'Add header', 'restbench' ) }
+									keyPlaceholder={ __( 'Header-Name', 'routemark' ) }
+									addLabel={ __( 'Add header', 'routemark' ) }
 								/>
 							</div>
 						) }
@@ -307,9 +307,9 @@ export default function Workspace( { route, settings, preset, onRecord }: Props 
 						{ tab === 'docs' && <DocsView route={ route } /> }
 
 						{ tab === 'code' && (
-							<div className="rb-section">
-								<div className="rb-section-bar">
-									<div className="rb-seg" role="group" aria-label={ __( 'Snippet language', 'restbench' ) }>
+							<div className="rmk-section">
+								<div className="rmk-section-bar">
+									<div className="rmk-seg" role="group" aria-label={ __( 'Snippet language', 'routemark' ) }>
 										{ ( Object.keys( SNIPPET_LABELS ) as SnippetKind[] ).map( ( k ) => (
 											<button
 												key={ k }
@@ -322,10 +322,10 @@ export default function Workspace( { route, settings, preset, onRecord }: Props 
 											</button>
 										) ) }
 									</div>
-									<span className="rb-spacer" />
+									<span className="rmk-spacer" />
 									<CopyButton text={ buildSnippet( snippet, path, draft ) } />
 								</div>
-								<pre className="rb-pre rb-codebox">{ buildSnippet( snippet, path, draft ) }</pre>
+								<pre className="rmk-pre rmk-codebox">{ buildSnippet( snippet, path, draft ) }</pre>
 							</div>
 						) }
 					</div>

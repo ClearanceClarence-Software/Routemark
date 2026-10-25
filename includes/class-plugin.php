@@ -2,10 +2,10 @@
 /**
  * Boots the plugin.
  *
- * @package Restbench
+ * @package Routemark
  */
 
-namespace Restbench;
+namespace Routemark;
 
 defined( 'ABSPATH' ) || exit;
 

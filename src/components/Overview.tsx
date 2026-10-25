@@ -38,27 +38,27 @@ export default function Overview( { routes, namespaces, onPick, onNamespace, hid
 	const endpointCount = routes.reduce( ( n, r ) => n + r.endpoints.length, 0 );
 
 	return (
-		<div className="rb-overview">
-			<h2 className="rb-overview-title">{ __( 'Overview', 'restbench' ) }</h2>
-			<p className="rb-overview-lede">
+		<div className="rmk-overview">
+			<h2 className="rmk-overview-title">{ __( 'Overview', 'routemark' ) }</h2>
+			<p className="rmk-overview-lede">
 				{ sprintf(
 					/* translators: 1: routes, 2: endpoints, 3: namespaces */
-					__( '%1$d routes and %2$d endpoints across %3$d namespaces. Pick a route on the left to look inside it.', 'restbench' ),
+					__( '%1$d routes and %2$d endpoints across %3$d namespaces. Pick a route on the left to look inside it.', 'routemark' ),
 					routes.length,
 					endpointCount,
 					namespaces.length
 				) }
 			</p>
 
-			<section className="rb-overview-section">
-				<h3 className="rb-section-title">{ __( 'Namespaces', 'restbench' ) }</h3>
-				<div className="rb-table-wrap">
-					<table className="rb-table rb-table--ns">
+			<section className="rmk-overview-section">
+				<h3 className="rmk-section-title">{ __( 'Namespaces', 'routemark' ) }</h3>
+				<div className="rmk-table-wrap">
+					<table className="rmk-table rmk-table--ns">
 						<thead>
 							<tr>
-								<th>{ __( 'Namespace', 'restbench' ) }</th>
-								<th>{ __( 'Added by', 'restbench' ) }</th>
-								<th className="num">{ __( 'Routes', 'restbench' ) }</th>
+								<th>{ __( 'Namespace', 'routemark' ) }</th>
+								<th>{ __( 'Added by', 'routemark' ) }</th>
+								<th className="num">{ __( 'Routes', 'routemark' ) }</th>
 								{ METHODS.map( ( m ) => (
 									<th key={ m } className="num">
 										{ m }
@@ -70,14 +70,14 @@ export default function Overview( { routes, namespaces, onPick, onNamespace, hid
 							{ rows.map( ( row ) => (
 								<tr key={ row.namespace }>
 									<td>
-										<button type="button" className="rb-link rb-link--mono" onClick={ () => onNamespace( row.namespace ) }>
-											{ row.namespace || __( '(root)', 'restbench' ) }
+										<button type="button" className="rmk-link rmk-link--mono" onClick={ () => onNamespace( row.namespace ) }>
+											{ row.namespace || __( '(root)', 'routemark' ) }
 										</button>
 										{ hidden.includes( row.namespace ) && (
-											<span className="rb-hidden-tag">{ __( 'hidden', 'restbench' ) }</span>
+											<span className="rmk-hidden-tag">{ __( 'hidden', 'routemark' ) }</span>
 										) }
 									</td>
-									<td className="rb-ns-source">{ row.source ?? <span className="rb-muted">{ __( 'unknown', 'restbench' ) }</span> }</td>
+									<td className="rmk-ns-source">{ row.source ?? <span className="rmk-muted">{ __( 'unknown', 'routemark' ) }</span> }</td>
 									<td className="num">{ row.routes }</td>
 									{ row.counts.map( ( c, i ) => (
 										<td key={ METHODS[ i ] } className={ `num${ c === 0 ? ' is-zero' : '' }` }>
@@ -91,27 +91,27 @@ export default function Overview( { routes, namespaces, onPick, onNamespace, hid
 				</div>
 			</section>
 
-			<section className="rb-overview-section">
-				<h3 className="rb-section-title">{ __( 'Open to everyone', 'restbench' ) }</h3>
-				<p className="rb-muted rb-note">
+			<section className="rmk-overview-section">
+				<h3 className="rmk-section-title">{ __( 'Open to everyone', 'routemark' ) }</h3>
+				<p className="rmk-muted rmk-note">
 					{ createInterpolateElement(
-						__( "These endpoints use <code>__return_true</code> as their permission check, so they work without logging in. Most are fine (oEmbed, the index), but it's worth knowing which ones they are.", 'restbench' ),
+						__( "These endpoints use <code>__return_true</code> as their permission check, so they work without logging in. Most are fine (oEmbed, the index), but it's worth knowing which ones they are.", 'routemark' ),
 						{ code: <code /> }
 					) }
 				</p>
 				{ open.length === 0 ? (
-					<p className="rb-muted">{ __( 'None found.', 'restbench' ) }</p>
+					<p className="rmk-muted">{ __( 'None found.', 'routemark' ) }</p>
 				) : (
-					<ul className="rb-openlist">
+					<ul className="rmk-openlist">
 						{ open.map( ( o, i ) => (
 							<li key={ o.route.route + i }>
 								<button type="button" onClick={ () => onPick( o.route.route ) }>
-									<span className="rb-openlist-methods">
+									<span className="rmk-openlist-methods">
 										{ o.methods.map( ( m ) => (
 											<Method key={ m } method={ m } size="sm" />
 										) ) }
 									</span>
-									<span className="rb-openlist-ns">{ o.route.namespace || '/' }</span>
+									<span className="rmk-openlist-ns">{ o.route.namespace || '/' }</span>
 									<PathText template={ localPath( o.route ) } />
 								</button>
 							</li>
@@ -120,10 +120,10 @@ export default function Overview( { routes, namespaces, onPick, onNamespace, hid
 				) }
 			</section>
 
-			<p className="rb-shortcuts">
-				<kbd className="rb-kbd">/</kbd> { __( 'to search,', 'restbench' ) } <kbd className="rb-kbd">↑</kbd>
-				<kbd className="rb-kbd">↓</kbd> { __( 'to move through the list,', 'restbench' ) } <kbd className="rb-kbd">Ctrl</kbd>+
-				<kbd className="rb-kbd">Enter</kbd> { __( 'to send.', 'restbench' ) }
+			<p className="rmk-shortcuts">
+				<kbd className="rmk-kbd">/</kbd> { __( 'to search,', 'routemark' ) } <kbd className="rmk-kbd">↑</kbd>
+				<kbd className="rmk-kbd">↓</kbd> { __( 'to move through the list,', 'routemark' ) } <kbd className="rmk-kbd">Ctrl</kbd>+
+				<kbd className="rmk-kbd">Enter</kbd> { __( 'to send.', 'routemark' ) }
 			</p>
 		</div>
 	);

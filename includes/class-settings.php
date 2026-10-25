@@ -2,13 +2,13 @@
 /**
  * Per-user settings, stored in user meta.
  *
- * GET  /wp-json/restbench/v1/settings
- * POST /wp-json/restbench/v1/settings  (send only the keys you want to change)
+ * GET  /wp-json/routemark/v1/settings
+ * POST /wp-json/routemark/v1/settings  (send only the keys you want to change)
  *
- * @package Restbench
+ * @package Routemark
  */
 
-namespace Restbench;
+namespace Routemark;
 
 use WP_REST_Request;
 use WP_REST_Response;
@@ -23,7 +23,7 @@ defined( 'ABSPATH' ) || exit;
  */
 class Settings {
 
-	const META_KEY = 'restbench_settings';
+	const META_KEY = 'routemark_settings';
 
 	/**
 	 * Hooks into WordPress.
@@ -126,7 +126,7 @@ class Settings {
 	}
 
 	/**
-	 * Registers GET and POST restbench/v1/settings.
+	 * Registers GET and POST routemark/v1/settings.
 	 */
 	public function register_routes(): void {
 		$args = array();

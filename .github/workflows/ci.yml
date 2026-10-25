@@ -18,8 +18,8 @@ jobs:
       - run: npm run typecheck
       - run: npm run zip
       - name: PHP syntax check
-        run: for f in restbench.php uninstall.php includes/*.php; do php -l "$f"; done
+        run: for f in routemark.php uninstall.php includes/*.php; do php -l "$f"; done
       - uses: actions/upload-artifact@v7
         with:
-          name: restbench-plugin
+          name: routemark-plugin
           path: dist/*.zip

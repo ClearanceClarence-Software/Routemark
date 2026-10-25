@@ -2,10 +2,10 @@
 /**
  * Works out which plugin, theme or core file registered a route.
  *
- * @package Restbench
+ * @package Routemark
  */
 
-namespace Restbench;
+namespace Routemark;
 
 defined( 'ABSPATH' ) || exit;
 

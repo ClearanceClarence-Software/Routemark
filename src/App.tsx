@@ -22,7 +22,7 @@ export default function App() {
 	const [ settings, setSettings ] = useState< Settings >( initialSettings );
 	const [ saveStatus, setSaveStatus ] = useState< SaveStatus >( 'idle' );
 	const [ showSettings, setShowSettings ] = useState( false );
-	const [ history, setHistory ] = useStoredState< HistoryEntry[] >( `restbench.history.${ window.restbenchSettings?.userId ?? 0 }`, [] );
+	const [ history, setHistory ] = useStoredState< HistoryEntry[] >( `routemark.history.${ window.routemarkSettings?.userId ?? 0 }`, [] );
 	const [ filters, setFilters ] = useState< Filters >( { search: '', methods: [], publicOnly: false } );
 	const [ preset, setPreset ] = useState< { id: string; draft: Draft } | null >( null );
 	const searchRef = useRef< HTMLInputElement >( null );
@@ -56,20 +56,20 @@ export default function App() {
 	const load = useCallback( () => {
 		setLoading( true );
 		setError( null );
-		apiFetch< RoutesResponse >( { path: '/restbench/v1/routes' } )
+		apiFetch< RoutesResponse >( { path: '/routemark/v1/routes' } )
 			.then( setData )
-			.catch( ( err: { message?: string } ) => setError( err.message ?? __( 'Could not load routes.', 'restbench' ) ) )
+			.catch( ( err: { message?: string } ) => setError( err.message ?? __( 'Could not load routes.', 'routemark' ) ) )
 			.finally( () => setLoading( false ) );
 	}, [] );
 
 	useEffect( load, [ load ] );
 
-	// 0.1.0 kept one shared, unredacted history under restbench.history, and
+	// 0.1.0 kept one shared, unredacted history under routemark.history, and
 	// the theme lived in localStorage until it became a setting. Clear both out.
 	useEffect( () => {
 		try {
-			window.localStorage.removeItem( 'restbench.history' );
-			window.localStorage.removeItem( 'restbench.theme' );
+			window.localStorage.removeItem( 'routemark.history' );
+			window.localStorage.removeItem( 'routemark.theme' );
 		} catch {
 			// storage blocked, nothing to clean up then
 		}
@@ -131,35 +131,37 @@ export default function App() {
 	);
 
 	const current = data?.routes.find( ( r ) => r.route === selected ) ?? null;
-	const themeLabel = theme === 'light' ? __( 'Switch to dark theme', 'restbench' ) : __( 'Switch to light theme', 'restbench' );
+	const themeLabel = theme === 'light' ? __( 'Switch to dark theme', 'routemark' ) : __( 'Switch to light theme', 'routemark' );
 
 	return (
-		<div className="rb" data-theme={ theme }>
-			<header className="rb-topbar">
-				<button type="button" className="rb-brand" onClick={ () => pick( null ) } title={ __( 'Overview', 'restbench' ) }>
+		<div className="rmk" data-theme={ theme }>
+			<header className="rmk-topbar">
+				<button type="button" className="rmk-brand" onClick={ () => pick( null ) } title={ __( 'Overview', 'routemark' ) }>
 					<Mark size={ 28 } />
-					<span className="rb-brand-name">Restbench</span>
-					<span className="rb-brand-version">{ window.restbenchSettings?.version ?? '' }</span>
+					<span className="rmk-brand-name">
+						Route<em>mark</em>
+					</span>
+					<span className="rmk-brand-version">{ window.routemarkSettings?.version ?? '' }</span>
 				</button>
 
-				<div className="rb-topbar-root" title={ __( 'REST API root', 'restbench' ) }>
-					<code>{ window.restbenchSettings?.restRoot ?? '/wp-json/' }</code>
+				<div className="rmk-topbar-root" title={ __( 'REST API root', 'routemark' ) }>
+					<code>{ window.routemarkSettings?.restRoot ?? '/wp-json/' }</code>
 				</div>
 
-				<span className="rb-spacer" />
+				<span className="rmk-spacer" />
 
 				<button
 					type="button"
-					className={ `rb-btn rb-btn--ghost${ loading ? ' is-spinning' : '' }` }
+					className={ `rmk-btn rmk-btn--ghost${ loading ? ' is-spinning' : '' }` }
 					onClick={ load }
 					disabled={ loading }
 				>
 					<Icon name="refresh" size={ 15 } />
-					<span className="rb-hide-sm">{ __( 'Reload routes', 'restbench' ) }</span>
+					<span className="rmk-hide-sm">{ __( 'Reload routes', 'routemark' ) }</span>
 				</button>
 				<button
 					type="button"
-					className="rb-btn rb-btn--icon rb-btn--ghost"
+					className="rmk-btn rmk-btn--icon rmk-btn--ghost"
 					onClick={ () => updateSettings( { theme: theme === 'light' ? 'dark' : 'light' } ) }
 					title={ themeLabel }
 					aria-label={ themeLabel }
@@ -168,16 +170,16 @@ export default function App() {
 				</button>
 				<button
 					type="button"
-					className={ `rb-btn rb-btn--ghost${ showSettings ? ' is-active' : '' }` }
+					className={ `rmk-btn rmk-btn--ghost${ showSettings ? ' is-active' : '' }` }
 					aria-pressed={ showSettings }
 					onClick={ () => setShowSettings( ! showSettings ) }
 				>
 					<Icon name="sliders" size={ 16 } />
-					<span className="rb-hide-sm">{ __( 'Settings', 'restbench' ) }</span>
+					<span className="rmk-hide-sm">{ __( 'Settings', 'routemark' ) }</span>
 				</button>
 			</header>
 
-			<div className="rb-body">
+			<div className="rmk-body">
 				<Sidebar
 					groups={ groups }
 					shown={ filtered.length }
@@ -197,23 +199,23 @@ export default function App() {
 					onStep={ step }
 				/>
 
-				<main className="rb-main">
+				<main className="rmk-main">
 					{ error && (
-						<div className="rb-center">
-							<div className="rb-callout rb-callout--error">
+						<div className="rmk-center">
+							<div className="rmk-callout rmk-callout--error">
 								<Icon name="alert" size={ 16 } />
 								<div>
 									<p>{ error }</p>
 								</div>
 							</div>
-							<button type="button" className="rb-btn rb-btn--primary" onClick={ load }>
-								<Icon name="refresh" size={ 15 } /> { __( 'Try again', 'restbench' ) }
+							<button type="button" className="rmk-btn rmk-btn--primary" onClick={ load }>
+								<Icon name="refresh" size={ 15 } /> { __( 'Try again', 'routemark' ) }
 							</button>
 						</div>
 					) }
 
 					{ ! error && ! data && (
-						<div className="rb-skeleton" aria-busy="true" aria-label={ __( 'Loading routes', 'restbench' ) }>
+						<div className="rmk-skeleton" aria-busy="true" aria-label={ __( 'Loading routes', 'routemark' ) }>
 							<span />
 							<span />
 							<span />

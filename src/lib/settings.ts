@@ -14,12 +14,12 @@ export const DEFAULT_SETTINGS: Settings = {
 };
 
 export function initialSettings(): Settings {
-	return { ...DEFAULT_SETTINGS, ...( window.restbenchSettings?.settings ?? {} ) };
+	return { ...DEFAULT_SETTINGS, ...( window.routemarkSettings?.settings ?? {} ) };
 }
 
 // Only sends what changed. The server answers with the full, validated set.
 export function saveSettings( patch: Partial< Settings > ): Promise< Settings > {
-	return apiFetch< Settings >( { path: '/restbench/v1/settings', method: 'POST', data: patch } );
+	return apiFetch< Settings >( { path: '/routemark/v1/settings', method: 'POST', data: patch } );
 }
 
 export function needsConfirm( setting: Settings[ 'confirmWrites' ], method: string ): boolean {

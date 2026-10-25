@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
-<ruleset name="Restbench">
+<ruleset name="Routemark">
 	<description>WordPress Coding Standards, including the escaping, sanitizing and nonce checks.</description>
 
-	<file>restbench.php</file>
+	<file>routemark.php</file>
 	<file>uninstall.php</file>
 	<file>includes</file>
 
@@ -15,7 +15,7 @@
 	<rule ref="WordPress.WP.I18n">
 		<properties>
 			<property name="text_domain" type="array">
-				<element value="restbench"/>
+				<element value="routemark"/>
 			</property>
 		</properties>
 	</rule>

@@ -14,14 +14,14 @@ export default function CodeEditor( { value, onChange, label, onSubmit }: Props 
 	const lines = Math.max( 1, value.split( '\n' ).length );
 
 	return (
-		<div className="rb-editor">
-			<div className="rb-editor-gutter" ref={ gutter } aria-hidden="true">
+		<div className="rmk-editor">
+			<div className="rmk-editor-gutter" ref={ gutter } aria-hidden="true">
 				{ Array.from( { length: lines }, ( _, i ) => (
 					<span key={ i }>{ i + 1 }</span>
 				) ) }
 			</div>
 			<textarea
-				className="rb-editor-input"
+				className="rmk-editor-input"
 				aria-label={ label }
 				spellCheck={ false }
 				autoCapitalize="off"

@@ -25,17 +25,17 @@ interface Props {
 function timeAgo( at: number ): string {
 	const s = Math.round( ( Date.now() - at ) / 1000 );
 	if ( s < 60 ) {
-		return __( 'just now', 'restbench' );
+		return __( 'just now', 'routemark' );
 	}
 	const m = Math.round( s / 60 );
 	if ( m < 60 ) {
 		/* translators: %d: minutes */
-		return sprintf( __( '%d min ago', 'restbench' ), m );
+		return sprintf( __( '%d min ago', 'routemark' ), m );
 	}
 	const h = Math.round( m / 60 );
 	if ( h < 24 ) {
 		/* translators: %d: hours */
-		return sprintf( __( '%d h ago', 'restbench' ), h );
+		return sprintf( __( '%d h ago', 'routemark' ), h );
 	}
 	return new Date( at ).toLocaleDateString();
 }
@@ -62,7 +62,7 @@ export default function Sidebar( {
 
 	// keep the selected route on screen when stepping with the arrow keys
 	useEffect( () => {
-		listRef.current?.querySelector( '.rb-route.is-selected' )?.scrollIntoView( { block: 'nearest' } );
+		listRef.current?.querySelector( '.rmk-route.is-selected' )?.scrollIntoView( { block: 'nearest' } );
 	}, [ selected ] );
 
 	const toggleGroup = ( ns: string ) =>
@@ -83,8 +83,8 @@ export default function Sidebar( {
 		} );
 
 	return (
-		<aside className="rb-sidebar">
-			<div className="rb-sidebar-switch" role="tablist" aria-label={ __( 'Sidebar', 'restbench' ) }>
+		<aside className="rmk-sidebar">
+			<div className="rmk-sidebar-switch" role="tablist" aria-label={ __( 'Sidebar', 'routemark' ) }>
 				<button
 					type="button"
 					role="tab"
@@ -92,7 +92,7 @@ export default function Sidebar( {
 					className={ view === 'routes' ? 'is-active' : '' }
 					onClick={ () => setView( 'routes' ) }
 				>
-					<Icon name="list" size={ 14 } /> { __( 'Routes', 'restbench' ) }
+					<Icon name="list" size={ 14 } /> { __( 'Routes', 'routemark' ) }
 				</button>
 				<button
 					type="button"
@@ -101,22 +101,22 @@ export default function Sidebar( {
 					className={ view === 'history' ? 'is-active' : '' }
 					onClick={ () => setView( 'history' ) }
 				>
-					<Icon name="clock" size={ 14 } /> { __( 'History', 'restbench' ) }
-					{ history.length > 0 && <span className="rb-tab-count">{ history.length }</span> }
+					<Icon name="clock" size={ 14 } /> { __( 'History', 'routemark' ) }
+					{ history.length > 0 && <span className="rmk-tab-count">{ history.length }</span> }
 				</button>
 			</div>
 
 			{ view === 'routes' && (
 				<>
-					<div className="rb-filters">
-						<label className="rb-search">
+					<div className="rmk-filters">
+						<label className="rmk-search">
 							<Icon name="search" size={ 15 } />
-							<span className="screen-reader-text">{ __( 'Filter routes', 'restbench' ) }</span>
+							<span className="screen-reader-text">{ __( 'Filter routes', 'routemark' ) }</span>
 							<input
 								ref={ searchRef }
 								type="search"
-								className="rb-search-input"
-								placeholder={ __( 'Filter routes', 'restbench' ) }
+								className="rmk-search-input"
+								placeholder={ __( 'Filter routes', 'routemark' ) }
 								value={ filters.search }
 								onChange={ ( e ) => onFilters( { ...filters, search: e.target.value } ) }
 								onKeyDown={ ( e ) => {
@@ -128,16 +128,16 @@ export default function Sidebar( {
 									}
 								} }
 							/>
-							<kbd className="rb-kbd">/</kbd>
+							<kbd className="rmk-kbd">/</kbd>
 						</label>
 
-						<div className="rb-chips" role="group" aria-label={ __( 'Filter by method', 'restbench' ) }>
+						<div className="rmk-chips" role="group" aria-label={ __( 'Filter by method', 'routemark' ) }>
 							{ METHODS.map( ( m ) => (
 								<button
 									key={ m }
 									type="button"
 									aria-pressed={ filters.methods.includes( m ) }
-									className={ `rb-chip rb-chip--${ m.toLowerCase() }${ filters.methods.includes( m ) ? ' is-on' : '' }` }
+									className={ `rmk-chip rmk-chip--${ m.toLowerCase() }${ filters.methods.includes( m ) ? ' is-on' : '' }` }
 									onClick={ () => toggleMethod( m ) }
 								>
 									{ m }
@@ -146,19 +146,19 @@ export default function Sidebar( {
 							<button
 								type="button"
 								aria-pressed={ filters.publicOnly }
-								className={ `rb-chip rb-chip--public${ filters.publicOnly ? ' is-on' : '' }` }
+								className={ `rmk-chip rmk-chip--public${ filters.publicOnly ? ' is-on' : '' }` }
 								onClick={ () => onFilters( { ...filters, publicOnly: ! filters.publicOnly } ) }
-								title={ __( 'Only endpoints anyone can call without logging in', 'restbench' ) }
+								title={ __( 'Only endpoints anyone can call without logging in', 'routemark' ) }
 							>
-								<Icon name="globe" size={ 12 } /> { __( 'Public', 'restbench' ) }
+								<Icon name="globe" size={ 12 } /> { __( 'Public', 'routemark' ) }
 							</button>
 						</div>
 
-						<div className="rb-filter-meta">
+						<div className="rmk-filter-meta">
 							<span>
 								{ sprintf(
 									/* translators: 1: routes shown, 2: total routes */
-									__( '%1$d of %2$d routes', 'restbench' ),
+									__( '%1$d of %2$d routes', 'routemark' ),
 									shown,
 									total
 								) }
@@ -166,57 +166,57 @@ export default function Sidebar( {
 							{ filtering && (
 								<button
 									type="button"
-									className="rb-link"
+									className="rmk-link"
 									onClick={ () => onFilters( { search: '', methods: [], publicOnly: false } ) }
 								>
-									{ __( 'Clear filters', 'restbench' ) }
+									{ __( 'Clear filters', 'routemark' ) }
 								</button>
 							) }
 						</div>
 					</div>
 
-					<div className="rb-tree" ref={ listRef }>
-						{ groups.length === 0 && <p className="rb-tree-empty">{ __( 'No routes match these filters.', 'restbench' ) }</p> }
+					<div className="rmk-tree" ref={ listRef }>
+						{ groups.length === 0 && <p className="rmk-tree-empty">{ __( 'No routes match these filters.', 'routemark' ) }</p> }
 
 						{ groups.map( ( group ) => {
 							const isCollapsed = collapsed.has( group.namespace ) && ! filtering;
 							return (
-								<section key={ group.namespace } className="rb-group">
+								<section key={ group.namespace } className="rmk-group">
 									<button
 										type="button"
-										className={ `rb-group-head${ isCollapsed ? ' is-collapsed' : '' }` }
+										className={ `rmk-group-head${ isCollapsed ? ' is-collapsed' : '' }` }
 										aria-expanded={ ! isCollapsed }
 										onClick={ () => toggleGroup( group.namespace ) }
 									>
 										<Icon name="chevron" size={ 13 } />
-										<span className="rb-group-label">
-											<span className="rb-group-name">{ group.namespace || __( '(root)', 'restbench' ) }</span>
+										<span className="rmk-group-label">
+											<span className="rmk-group-name">{ group.namespace || __( '(root)', 'routemark' ) }</span>
 											{ groupSource( group.routes ) && (
-												<span className="rb-group-source">{ groupSource( group.routes ) }</span>
+												<span className="rmk-group-source">{ groupSource( group.routes ) }</span>
 											) }
 										</span>
-										<span className="rb-group-count">{ group.routes.length }</span>
+										<span className="rmk-group-count">{ group.routes.length }</span>
 									</button>
 
 									{ ! isCollapsed && (
-										<ul className="rb-routes">
+										<ul className="rmk-routes">
 											{ group.routes.map( ( route ) => (
 												<li key={ route.route }>
 													<button
 														type="button"
-														className={ `rb-route${ route.route === selected ? ' is-selected' : '' }` }
+														className={ `rmk-route${ route.route === selected ? ' is-selected' : '' }` }
 														onClick={ () => onSelect( route.route ) }
 														title={ route.route }
 													>
-														<span className="rb-route-path">
+														<span className="rmk-route-path">
 															<PathText template={ localPath( route ) } />
 														</span>
 														{ isPublicRoute( route ) && (
-															<span className="rb-route-public" title={ __( 'Has public endpoints', 'restbench' ) }>
+															<span className="rmk-route-public" title={ __( 'Has public endpoints', 'routemark' ) }>
 																<Icon name="globe" size={ 13 } />
 															</span>
 														) }
-														<span className="rb-route-methods">
+														<span className="rmk-route-methods">
 															{ routeMethods( route ).map( ( m ) => (
 																<Method key={ m } method={ m } size="sm" />
 															) ) }
@@ -234,32 +234,32 @@ export default function Sidebar( {
 			) }
 
 			{ view === 'history' && (
-				<div className="rb-tree">
+				<div className="rmk-tree">
 					{ history.length === 0 ? (
-						<p className="rb-tree-empty">{ __( 'Nothing here yet. Every request you send gets added to this list.', 'restbench' ) }</p>
+						<p className="rmk-tree-empty">{ __( 'Nothing here yet. Every request you send gets added to this list.', 'routemark' ) }</p>
 					) : (
 						<>
-							<ul className="rb-history">
+							<ul className="rmk-history">
 								{ history.map( ( entry ) => (
 									<li key={ entry.id }>
-										<button type="button" className="rb-history-item" onClick={ () => onRestore( entry ) }>
-											<span className="rb-history-top">
+										<button type="button" className="rmk-history-item" onClick={ () => onRestore( entry ) }>
+											<span className="rmk-history-top">
 												<Method method={ entry.draft.method } size="sm" />
-												<span className={ `rb-status-dot rb-status--${ Math.floor( entry.status / 100 ) }xx` }>
+												<span className={ `rmk-status-dot rmk-status--${ Math.floor( entry.status / 100 ) }xx` }>
 													{ entry.status || 'ERR' }
 												</span>
-												<span className="rb-history-time">{ timeAgo( entry.at ) }</span>
+												<span className="rmk-history-time">{ timeAgo( entry.at ) }</span>
 											</span>
-											<span className="rb-history-path">{ entry.path }</span>
+											<span className="rmk-history-path">{ entry.path }</span>
 										</button>
 									</li>
 								) ) }
 							</ul>
-							<button type="button" className="rb-btn rb-btn--ghost rb-history-clear" onClick={ onClearHistory }>
+							<button type="button" className="rmk-btn rmk-btn--ghost rmk-history-clear" onClick={ onClearHistory }>
 								<Icon name="trash" size={ 14 } />
 								{ sprintf(
 									/* translators: %d: number of history entries */
-									_n( 'Clear %d request', 'Clear %d requests', history.length, 'restbench' ),
+									_n( 'Clear %d request', 'Clear %d requests', history.length, 'routemark' ),
 									history.length
 								) }
 							</button>

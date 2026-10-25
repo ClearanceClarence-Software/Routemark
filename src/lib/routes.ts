@@ -137,11 +137,11 @@ export function sourceLabel( route: RouteInfo ): string | null {
 	}
 	if ( route.source.type === 'theme' ) {
 		/* translators: %s: theme name */
-		return sprintf( __( '%s (theme)', 'restbench' ), route.source.name );
+		return sprintf( __( '%s (theme)', 'routemark' ), route.source.name );
 	}
 	if ( route.source.type === 'mu-plugin' ) {
 		/* translators: %s: must-use plugin file or folder */
-		return sprintf( __( '%s (must-use)', 'restbench' ), route.source.name );
+		return sprintf( __( '%s (must-use)', 'routemark' ), route.source.name );
 	}
 	return route.source.name;
 }

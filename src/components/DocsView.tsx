@@ -12,8 +12,8 @@ function Default( { value }: { value: unknown } ) {
 	}
 	const text = typeof value === 'object' ? JSON.stringify( value ) : String( value );
 	return (
-		<span className="rb-meta">
-			{ __( 'default', 'restbench' ) } <code>{ text === '' ? '""' : text }</code>
+		<span className="rmk-meta">
+			{ __( 'default', 'routemark' ) } <code>{ text === '' ? '""' : text }</code>
 		</span>
 	);
 }
@@ -27,12 +27,12 @@ function Constraints( { arg }: { arg: SchemaNode } ) {
 		bits.push( `≤ ${ arg.maximum }` );
 	}
 	if ( arg.items?.type ) {
-		bits.push( `${ __( 'items', 'restbench' ) }: ${ typeLabel( arg.items.type ) }` );
+		bits.push( `${ __( 'items', 'routemark' ) }: ${ typeLabel( arg.items.type ) }` );
 	}
 	if ( arg.items?.enum ) {
 		bits.push( arg.items.enum.map( String ).join( ', ' ) );
 	}
-	return bits.length ? <span className="rb-meta">{ bits.join( ' · ' ) }</span> : null;
+	return bits.length ? <span className="rmk-meta">{ bits.join( ' · ' ) }</span> : null;
 }
 
 function ArgRows( { args }: { args: Record< string, RouteArg > } ) {
@@ -41,28 +41,28 @@ function ArgRows( { args }: { args: Record< string, RouteArg > } ) {
 	);
 
 	if ( entries.length === 0 ) {
-		return <p className="rb-muted rb-note">{ __( 'This endpoint takes no arguments.', 'restbench' ) }</p>;
+		return <p className="rmk-muted rmk-note">{ __( 'This endpoint takes no arguments.', 'routemark' ) }</p>;
 	}
 
 	return (
-		<dl className="rb-args">
+		<dl className="rmk-args">
 			{ entries.map( ( [ name, arg ] ) => (
-				<div key={ name } className="rb-arg">
+				<div key={ name } className="rmk-arg">
 					<dt>
-						<code className="rb-arg-name">{ name }</code>
-						<span className="rb-arg-type">{ typeLabel( arg.type, arg.format ) }</span>
-						{ arg.required && <span className="rb-badge rb-badge--req">{ __( 'required', 'restbench' ) }</span> }
+						<code className="rmk-arg-name">{ name }</code>
+						<span className="rmk-arg-type">{ typeLabel( arg.type, arg.format ) }</span>
+						{ arg.required && <span className="rmk-badge rmk-badge--req">{ __( 'required', 'routemark' ) }</span> }
 					</dt>
 					<dd>
 						{ arg.description && <p>{ arg.description }</p> }
 						{ arg.enum && arg.enum.length > 0 && (
-							<div className="rb-enum">
+							<div className="rmk-enum">
 								{ arg.enum.map( ( v ) => (
 									<code key={ String( v ) }>{ String( v ) }</code>
 								) ) }
 							</div>
 						) }
-						<div className="rb-arg-meta">
+						<div className="rmk-arg-meta">
 							<Default value={ arg.default } />
 							<Constraints arg={ arg } />
 						</div>
@@ -75,18 +75,18 @@ function ArgRows( { args }: { args: Record< string, RouteArg > } ) {
 
 function EndpointDocs( { endpoint }: { endpoint: Endpoint } ) {
 	return (
-		<section className="rb-doc-block">
-			<header className="rb-doc-head">
+		<section className="rmk-doc-block">
+			<header className="rmk-doc-head">
 				{ endpoint.methods.map( ( m ) => (
 					<Method key={ m } method={ m } />
 				) ) }
 				{ endpoint.isPublic ? (
-					<span className="rb-badge rb-badge--public">
-						<Icon name="globe" size={ 12 } /> { __( 'No login needed', 'restbench' ) }
+					<span className="rmk-badge rmk-badge--public">
+						<Icon name="globe" size={ 12 } /> { __( 'No login needed', 'routemark' ) }
 					</span>
 				) : (
-					<span className="rb-badge">
-						<Icon name="lock" size={ 12 } /> { __( 'Permission check', 'restbench' ) }
+					<span className="rmk-badge">
+						<Icon name="lock" size={ 12 } /> { __( 'Permission check', 'routemark' ) }
 					</span>
 				) }
 			</header>
@@ -102,32 +102,32 @@ function SchemaTable( { schema }: { schema: SchemaNode } ) {
 	}
 
 	return (
-		<table className="rb-table">
+		<table className="rmk-table">
 			<thead>
 				<tr>
-					<th>{ __( 'Field', 'restbench' ) }</th>
-					<th>{ __( 'Type', 'restbench' ) }</th>
-					<th>{ __( 'Description', 'restbench' ) }</th>
+					<th>{ __( 'Field', 'routemark' ) }</th>
+					<th>{ __( 'Type', 'routemark' ) }</th>
+					<th>{ __( 'Description', 'routemark' ) }</th>
 				</tr>
 			</thead>
 			<tbody>
 				{ props.map( ( [ name, prop ] ) => (
 					<tr key={ name }>
 						<td>
-							<code className="rb-arg-name">{ name }</code>
-							{ prop.readonly && <span className="rb-badge rb-badge--ro">{ __( 'read-only', 'restbench' ) }</span> }
+							<code className="rmk-arg-name">{ name }</code>
+							{ prop.readonly && <span className="rmk-badge rmk-badge--ro">{ __( 'read-only', 'routemark' ) }</span> }
 						</td>
-						<td className="rb-arg-type">
+						<td className="rmk-arg-type">
 							{ typeLabel( prop.type, prop.format ) }
 							{ prop.properties && (
-								<span className="rb-meta">{ Object.keys( prop.properties ).join( ', ' ) }</span>
+								<span className="rmk-meta">{ Object.keys( prop.properties ).join( ', ' ) }</span>
 							) }
 						</td>
 						<td>
 							{ prop.description }
 							{ prop.context && prop.context.length > 0 && (
-								<span className="rb-meta">
-									{ __( 'context', 'restbench' ) }: { prop.context.join( ', ' ) }
+								<span className="rmk-meta">
+									{ __( 'context', 'routemark' ) }: { prop.context.join( ', ' ) }
 								</span>
 							) }
 						</td>
@@ -142,30 +142,30 @@ export default function DocsView( { route }: { route: RouteInfo } ) {
 	const [ raw, setRaw ] = useState( false );
 
 	return (
-		<div className="rb-docs">
-			<h4 className="rb-label">{ __( 'Arguments', 'restbench' ) }</h4>
+		<div className="rmk-docs">
+			<h4 className="rmk-label">{ __( 'Arguments', 'routemark' ) }</h4>
 			{ route.endpoints.map( ( e, i ) => (
 				<EndpointDocs key={ i } endpoint={ e } />
 			) ) }
 
-			<div className="rb-docs-schema">
-				<h4 className="rb-label">
-					{ __( 'Response schema', 'restbench' ) }
-					{ route.schema?.title && <code className="rb-label-code">{ route.schema.title }</code> }
+			<div className="rmk-docs-schema">
+				<h4 className="rmk-label">
+					{ __( 'Response schema', 'routemark' ) }
+					{ route.schema?.title && <code className="rmk-label-code">{ route.schema.title }</code> }
 				</h4>
-				{ ! route.schema && <p className="rb-muted rb-note">{ __( 'This route does not publish a schema.', 'restbench' ) }</p> }
+				{ ! route.schema && <p className="rmk-muted rmk-note">{ __( 'This route does not publish a schema.', 'routemark' ) }</p> }
 				{ route.schema && (
 					<>
-						<div className="rb-seg" role="group" aria-label={ __( 'Schema view', 'restbench' ) }>
+						<div className="rmk-seg" role="group" aria-label={ __( 'Schema view', 'routemark' ) }>
 							<button type="button" aria-pressed={ ! raw } className={ ! raw ? 'is-on' : '' } onClick={ () => setRaw( false ) }>
-								{ __( 'Fields', 'restbench' ) }
+								{ __( 'Fields', 'routemark' ) }
 							</button>
 							<button type="button" aria-pressed={ raw } className={ raw ? 'is-on' : '' } onClick={ () => setRaw( true ) }>
 								JSON
 							</button>
 						</div>
 						{ raw ? (
-							<div className="rb-codebox">
+							<div className="rmk-codebox">
 								<JsonView value={ route.schema } openDepth={ 3 } />
 							</div>
 						) : (

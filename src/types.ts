@@ -109,6 +109,6 @@ export interface Settings {
 declare global {
 	interface Window {
 		// userId keys the request history, so two admins on one browser don't see each other's requests
-		restbenchSettings?: { restRoot: string; version: string; userId: number; settings?: Settings };
+		routemarkSettings?: { restRoot: string; version: string; userId: number; settings?: Settings };
 	}
 }

@@ -1,13 +1,13 @@
 <?php
 /**
- * GET /wp-json/restbench/v1/routes
+ * GET /wp-json/routemark/v1/routes
  *
  * Dumps the whole route table in a shape the React side can use.
  *
- * @package Restbench
+ * @package Routemark
  */
 
-namespace Restbench;
+namespace Routemark;
 
 use WP_REST_Request;
 use WP_REST_Response;
@@ -20,7 +20,7 @@ defined( 'ABSPATH' ) || exit;
  */
 class Routes_Controller {
 
-	const REST_NAMESPACE = 'restbench/v1';
+	const REST_NAMESPACE = 'routemark/v1';
 
 	// Only the descriptive bits of an arg. validate_callback and friends are
 	// closures half the time and json_encode chokes on them anyway.
@@ -49,7 +49,7 @@ class Routes_Controller {
 	}
 
 	/**
-	 * Registers GET restbench/v1/routes.
+	 * Registers GET routemark/v1/routes.
 	 */
 	public function register_routes(): void {
 		register_rest_route(

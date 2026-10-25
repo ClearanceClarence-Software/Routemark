@@ -1,11 +1,11 @@
 <?php
 /**
- * Tools > Restbench. The page itself is a React app, this just mounts it.
+ * Tools > Routemark. The page itself is a React app, this just mounts it.
  *
- * @package Restbench
+ * @package Routemark
  */
 
-namespace Restbench;
+namespace Routemark;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -14,8 +14,8 @@ defined( 'ABSPATH' ) || exit;
  */
 class Admin {
 
-	const SLUG       = 'restbench';
-	const HANDLE     = 'restbench-admin';
+	const SLUG       = 'routemark';
+	const HANDLE     = 'routemark-admin';
 	const CAPABILITY = 'manage_options';
 
 	/**
@@ -32,16 +32,16 @@ class Admin {
 		add_action( 'admin_menu', array( $this, 'add_page' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 		add_filter( 'admin_body_class', array( $this, 'body_class' ) );
-		add_filter( 'plugin_action_links_' . plugin_basename( RESTBENCH_FILE ), array( $this, 'action_links' ) );
+		add_filter( 'plugin_action_links_' . plugin_basename( ROUTEMARK_FILE ), array( $this, 'action_links' ) );
 	}
 
 	/**
-	 * Adds Tools > Restbench.
+	 * Adds Tools > Routemark.
 	 */
 	public function add_page(): void {
 		$this->hook_suffix = (string) add_management_page(
-			__( 'Restbench', 'restbench' ),
-			__( 'Restbench', 'restbench' ),
+			__( 'Routemark', 'routemark' ),
+			__( 'Routemark', 'routemark' ),
 			self::CAPABILITY,
 			self::SLUG,
 			array( $this, 'render_page' )
@@ -58,7 +58,7 @@ class Admin {
 	public function body_class( string $classes ): string {
 		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
 		if ( $screen && $screen->id === $this->hook_suffix ) {
-			$classes .= ' restbench-screen';
+			$classes .= ' routemark-screen';
 		}
 		return $classes;
 	}
@@ -71,7 +71,7 @@ class Admin {
 	 */
 	public function action_links( array $links ): array {
 		$url = admin_url( 'tools.php?page=' . self::SLUG );
-		array_unshift( $links, '<a href="' . esc_url( $url ) . '">' . esc_html__( 'Open', 'restbench' ) . '</a>' );
+		array_unshift( $links, '<a href="' . esc_url( $url ) . '">' . esc_html__( 'Open', 'routemark' ) . '</a>' );
 		return $links;
 	}
 
@@ -81,17 +81,17 @@ class Admin {
 	public function render_page(): void {
 		// The hidden h1 and wp-header-end are there so WordPress drops admin
 		// notices above the app instead of somewhere inside it.
-		echo '<h1 class="screen-reader-text">' . esc_html__( 'Restbench', 'restbench' ) . '</h1>';
+		echo '<h1 class="screen-reader-text">' . esc_html__( 'Routemark', 'routemark' ) . '</h1>';
 		echo '<hr class="wp-header-end">';
 
 		if ( ! file_exists( $this->asset_file() ) ) {
 			echo '<div class="notice notice-error"><p>';
-			esc_html_e( 'Restbench assets are missing. Run "npm install" and "npm run build" in the plugin folder.', 'restbench' );
+			esc_html_e( 'Routemark assets are missing. Run "npm install" and "npm run build" in the plugin folder.', 'routemark' );
 			echo '</p></div>';
 			return;
 		}
 
-		echo '<div id="restbench-root"></div>';
+		echo '<div id="routemark-root"></div>';
 	}
 
 	/**
@@ -108,7 +108,7 @@ class Admin {
 
 		wp_enqueue_script(
 			self::HANDLE,
-			RESTBENCH_URL . 'build/index.js',
+			ROUTEMARK_URL . 'build/index.js',
 			$asset['dependencies'],
 			$asset['version'],
 			true
@@ -116,7 +116,7 @@ class Admin {
 
 		wp_enqueue_style(
 			self::HANDLE,
-			RESTBENCH_URL . 'build/index.css',
+			ROUTEMARK_URL . 'build/index.css',
 			array(),
 			$asset['version']
 		);
@@ -125,10 +125,10 @@ class Admin {
 
 		wp_add_inline_script(
 			self::HANDLE,
-			'window.restbenchSettings = ' . wp_json_encode(
+			'window.routemarkSettings = ' . wp_json_encode(
 				array(
 					'restRoot' => esc_url_raw( rest_url() ),
-					'version'  => RESTBENCH_VERSION,
+					'version'  => ROUTEMARK_VERSION,
 					'userId'   => get_current_user_id(),
 					// Inlined so the page opens with the right theme and options
 					// instead of flashing defaults while it fetches them.
@@ -141,7 +141,7 @@ class Admin {
 			'before'
 		);
 
-		wp_set_script_translations( self::HANDLE, 'restbench' );
+		wp_set_script_translations( self::HANDLE, 'routemark' );
 	}
 
 	/**
@@ -150,6 +150,6 @@ class Admin {
 	 * @return string
 	 */
 	private function asset_file(): string {
-		return RESTBENCH_DIR . 'build/index.asset.php';
+		return ROUTEMARK_DIR . 'build/index.asset.php';
 	}
 }

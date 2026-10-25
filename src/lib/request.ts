@@ -211,7 +211,7 @@ export function formatBytes( bytes: number ): string {
 
 // Works with plain permalinks too (?rest_route=/...).
 export function fullUrl( path: string ): string {
-	const root = window.restbenchSettings?.restRoot ?? '/wp-json/';
+	const root = window.routemarkSettings?.restRoot ?? '/wp-json/';
 	const clean = path.replace( /^\//, '' );
 	if ( root.includes( 'rest_route=' ) ) {
 		return root + clean.replace( '?', '&' );

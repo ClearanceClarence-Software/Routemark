@@ -32,14 +32,14 @@ export default function ResponsePanel( { result, running, jsonDepth = 2 }: { res
 
 	if ( ! result ) {
 		return (
-			<section className="rb-response rb-response--empty" aria-live="polite">
+			<section className="rmk-response rmk-response--empty" aria-live="polite">
 				{ running ? (
-					<div className="rb-response-wait">
-						<span className="rb-pulse" /> { __( 'Sending…', 'restbench' ) }
+					<div className="rmk-response-wait">
+						<span className="rmk-pulse" /> { __( 'Sending…', 'routemark' ) }
 					</div>
 				) : (
-					<div className="rb-response-idle">
-						<p>{ __( 'Nothing sent yet.', 'restbench' ) }</p>
+					<div className="rmk-response-idle">
+						<p>{ __( 'Nothing sent yet.', 'routemark' ) }</p>
 					</div>
 				) }
 			</section>
@@ -54,21 +54,21 @@ export default function ResponsePanel( { result, running, jsonDepth = 2 }: { res
 	const pretty = result.isJson ? JSON.stringify( result.json, null, 2 ) : result.raw;
 
 	return (
-		<section className={ `rb-response${ running ? ' is-stale' : '' }` } aria-live="polite">
-			<div className="rb-response-bar">
-				<span className={ `rb-status rb-status--${ family }xx` }>
+		<section className={ `rmk-response${ running ? ' is-stale' : '' }` } aria-live="polite">
+			<div className="rmk-response-bar">
+				<span className={ `rmk-status rmk-status--${ family }xx` }>
 					<strong>{ result.status || 'ERR' }</strong>
 					<span>{ result.statusText || REASONS[ result.status ] || '' }</span>
 				</span>
-				<span className="rb-response-stat">
+				<span className="rmk-response-stat">
 					<Icon name="clock" size={ 13 } /> { result.durationMs } ms
 				</span>
-				<span className="rb-response-stat">{ formatBytes( result.sizeBytes ) }</span>
+				<span className="rmk-response-stat">{ formatBytes( result.sizeBytes ) }</span>
 				{ total !== undefined && (
-					<span className="rb-response-stat">
+					<span className="rmk-response-stat">
 						{ sprintf(
 							/* translators: 1: total items, 2: total pages */
-							__( '%1$s items · %2$s pages', 'restbench' ),
+							__( '%1$s items · %2$s pages', 'routemark' ),
 							total,
 							pages ?? '1'
 						) }
@@ -77,7 +77,7 @@ export default function ResponsePanel( { result, running, jsonDepth = 2 }: { res
 			</div>
 
 			{ error && (
-				<div className="rb-callout rb-callout--error">
+				<div className="rmk-callout rmk-callout--error">
 					<Icon name="alert" size={ 16 } />
 					<div>
 						<code>{ error.code }</code>
@@ -87,13 +87,13 @@ export default function ResponsePanel( { result, running, jsonDepth = 2 }: { res
 			) }
 
 			<Tabs< View >
-				label={ __( 'Response view', 'restbench' ) }
+				label={ __( 'Response view', 'routemark' ) }
 				active={ view }
 				onChange={ setView }
 				tabs={ [
-					{ id: 'pretty', label: __( 'Body', 'restbench' ) },
-					{ id: 'raw', label: __( 'Raw', 'restbench' ) },
-					{ id: 'headers', label: __( 'Headers', 'restbench' ), count: headerCount },
+					{ id: 'pretty', label: __( 'Body', 'routemark' ) },
+					{ id: 'raw', label: __( 'Raw', 'routemark' ) },
+					{ id: 'headers', label: __( 'Headers', 'routemark' ), count: headerCount },
 				] }
 				trailing={
 					<>
@@ -101,18 +101,18 @@ export default function ResponsePanel( { result, running, jsonDepth = 2 }: { res
 							<>
 								<button
 									type="button"
-									className="rb-btn rb-btn--icon rb-btn--ghost"
-									title={ __( 'Expand all', 'restbench' ) }
-									aria-label={ __( 'Expand all', 'restbench' ) }
+									className="rmk-btn rmk-btn--icon rmk-btn--ghost"
+									title={ __( 'Expand all', 'routemark' ) }
+									aria-label={ __( 'Expand all', 'routemark' ) }
 									onClick={ () => setDepth( ( d ) => ( { open: 99, rev: d.rev + 1 } ) ) }
 								>
 									<Icon name="expand" size={ 14 } />
 								</button>
 								<button
 									type="button"
-									className="rb-btn rb-btn--icon rb-btn--ghost"
-									title={ __( 'Collapse all', 'restbench' ) }
-									aria-label={ __( 'Collapse all', 'restbench' ) }
+									className="rmk-btn rmk-btn--icon rmk-btn--ghost"
+									title={ __( 'Collapse all', 'routemark' ) }
+									aria-label={ __( 'Collapse all', 'routemark' ) }
 									onClick={ () => setDepth( ( d ) => ( { open: 1, rev: d.rev + 1 } ) ) }
 								>
 									<Icon name="collapse" size={ 14 } />
@@ -124,18 +124,18 @@ export default function ResponsePanel( { result, running, jsonDepth = 2 }: { res
 				}
 			/>
 
-			<div className="rb-response-body">
+			<div className="rmk-response-body">
 				{ view === 'pretty' &&
 					( result.isJson ? (
 						<JsonView value={ result.json } openDepth={ depth.open } revision={ depth.rev } />
 					) : (
-						<pre className="rb-pre">{ result.raw || __( '(empty body)', 'restbench' ) }</pre>
+						<pre className="rmk-pre">{ result.raw || __( '(empty body)', 'routemark' ) }</pre>
 					) ) }
 
-				{ view === 'raw' && <pre className="rb-pre rb-pre--wrap">{ result.raw || __( '(empty body)', 'restbench' ) }</pre> }
+				{ view === 'raw' && <pre className="rmk-pre rmk-pre--wrap">{ result.raw || __( '(empty body)', 'routemark' ) }</pre> }
 
 				{ view === 'headers' && (
-					<table className="rb-table rb-table--headers">
+					<table className="rmk-table rmk-table--headers">
 						<tbody>
 							{ Object.entries( result.headers )
 								.sort( ( [ a ], [ b ] ) => a.localeCompare( b ) )

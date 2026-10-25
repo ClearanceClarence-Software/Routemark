@@ -19,18 +19,18 @@ const HISTORY_SIZES = [ 10, 20, 40, 100, 200 ];
 
 function Row( { label, help, htmlFor, children }: { label: string; help?: ReactNode; htmlFor?: string; children: ReactNode } ) {
 	return (
-		<div className="rb-setting">
-			<div className="rb-setting-text">
+		<div className="rmk-setting">
+			<div className="rmk-setting-text">
 				{ htmlFor ? (
-					<label className="rb-setting-label" htmlFor={ htmlFor }>
+					<label className="rmk-setting-label" htmlFor={ htmlFor }>
 						{ label }
 					</label>
 				) : (
-					<span className="rb-setting-label">{ label }</span>
+					<span className="rmk-setting-label">{ label }</span>
 				) }
-				{ help && <p className="rb-setting-help">{ help }</p> }
+				{ help && <p className="rmk-setting-help">{ help }</p> }
 			</div>
-			<div className="rb-setting-control">{ children }</div>
+			<div className="rmk-setting-control">{ children }</div>
 		</div>
 	);
 }
@@ -47,7 +47,7 @@ function Choice< T extends string >( {
 	label: string;
 } ) {
 	return (
-		<div className="rb-seg" role="group" aria-label={ label }>
+		<div className="rmk-seg" role="group" aria-label={ label }>
 			{ options.map( ( o ) => (
 				<button
 					key={ o.value }
@@ -78,36 +78,36 @@ export default function SettingsView( { settings, routes, historyCount, status, 
 	};
 
 	return (
-		<div className="rb-settings">
-			<div className="rb-settings-head">
-				<h2 className="rb-overview-title">{ __( 'Settings', 'restbench' ) }</h2>
-				<span className={ `rb-save-status is-${ status }` } aria-live="polite">
-					{ status === 'saving' && __( 'Saving…', 'restbench' ) }
-					{ status === 'saved' && __( 'Saved', 'restbench' ) }
-					{ status === 'error' && __( "Couldn't save. Try again?", 'restbench' ) }
+		<div className="rmk-settings">
+			<div className="rmk-settings-head">
+				<h2 className="rmk-overview-title">{ __( 'Settings', 'routemark' ) }</h2>
+				<span className={ `rmk-save-status is-${ status }` } aria-live="polite">
+					{ status === 'saving' && __( 'Saving…', 'routemark' ) }
+					{ status === 'saved' && __( 'Saved', 'routemark' ) }
+					{ status === 'error' && __( "Couldn't save. Try again?", 'routemark' ) }
 				</span>
 			</div>
-			<p className="rb-overview-lede">
-				{ __( 'These are saved to your user account, so they follow you to other browsers. Other admins have their own.', 'restbench' ) }
+			<p className="rmk-overview-lede">
+				{ __( 'These are saved to your user account, so they follow you to other browsers. Other admins have their own.', 'routemark' ) }
 			</p>
 
-			<section className="rb-overview-section">
-				<h3 className="rb-section-title">{ __( 'History', 'restbench' ) }</h3>
-				<div className="rb-settings-card">
+			<section className="rmk-overview-section">
+				<h3 className="rmk-section-title">{ __( 'History', 'routemark' ) }</h3>
+				<div className="rmk-settings-card">
 					<Row
-						label={ __( 'Keep request history', 'restbench' ) }
-						help={ __( "History is stored in this browser only. Turning this off also clears what's there now.", 'restbench' ) }
+						label={ __( 'Keep request history', 'routemark' ) }
+						help={ __( "History is stored in this browser only. Turning this off also clears what's there now.", 'routemark' ) }
 					>
 						<Toggle
 							checked={ settings.keepHistory }
 							onChange={ ( keepHistory ) => onChange( { keepHistory } ) }
-							label={ __( 'Keep request history', 'restbench' ) }
+							label={ __( 'Keep request history', 'routemark' ) }
 						/>
 					</Row>
-					<Row label={ __( 'Requests to keep', 'restbench' ) } htmlFor="rb-history-size">
+					<Row label={ __( 'Requests to keep', 'routemark' ) } htmlFor="rmk-history-size">
 						<select
-							id="rb-history-size"
-							className="rb-input"
+							id="rmk-history-size"
+							className="rmk-input"
 							value={ settings.historySize }
 							disabled={ ! settings.keepHistory }
 							onChange={ ( e ) => onChange( { historySize: Number( e.target.value ) } ) }
@@ -120,52 +120,52 @@ export default function SettingsView( { settings, routes, historyCount, status, 
 						</select>
 					</Row>
 					<Row
-						label={ __( 'Saved right now', 'restbench' ) }
+						label={ __( 'Saved right now', 'routemark' ) }
 						help={ sprintf(
 							/* translators: %d: number of saved requests */
-							_n( '%d request', '%d requests', historyCount, 'restbench' ),
+							_n( '%d request', '%d requests', historyCount, 'routemark' ),
 							historyCount
 						) }
 					>
-						<button type="button" className="rb-btn rb-btn--outline" disabled={ historyCount === 0 } onClick={ onClearHistory }>
-							{ __( 'Clear history', 'restbench' ) }
+						<button type="button" className="rmk-btn rmk-btn--outline" disabled={ historyCount === 0 } onClick={ onClearHistory }>
+							{ __( 'Clear history', 'routemark' ) }
 						</button>
 					</Row>
 				</div>
 			</section>
 
-			<section className="rb-overview-section">
-				<h3 className="rb-section-title">{ __( 'Sending', 'restbench' ) }</h3>
-				<div className="rb-settings-card">
+			<section className="rmk-overview-section">
+				<h3 className="rmk-section-title">{ __( 'Sending', 'routemark' ) }</h3>
+				<div className="rmk-settings-card">
 					<Row
-						label={ __( 'Ask before sending', 'restbench' ) }
-						help={ __( 'Send has to be clicked twice for these, so a stray Ctrl+Enter does nothing.', 'restbench' ) }
+						label={ __( 'Ask before sending', 'routemark' ) }
+						help={ __( 'Send has to be clicked twice for these, so a stray Ctrl+Enter does nothing.', 'routemark' ) }
 					>
 						<Choice
-							label={ __( 'Ask before sending', 'restbench' ) }
+							label={ __( 'Ask before sending', 'routemark' ) }
 							value={ settings.confirmWrites }
 							onChange={ ( confirmWrites ) => onChange( { confirmWrites } ) }
 							options={ [
-								{ value: 'never', label: __( 'Never', 'restbench' ) },
-								{ value: 'delete', label: __( 'DELETE only', 'restbench' ) },
-								{ value: 'all', label: __( 'Anything but GET', 'restbench' ) },
+								{ value: 'never', label: __( 'Never', 'routemark' ) },
+								{ value: 'delete', label: __( 'DELETE only', 'routemark' ) },
+								{ value: 'all', label: __( 'Anything but GET', 'routemark' ) },
 							] }
 						/>
 					</Row>
 					<Row
-						label={ __( 'Pre-fill query parameters', 'restbench' ) }
-						help={ __( "List the route's arguments as switched-off rows in the Params tab.", 'restbench' ) }
+						label={ __( 'Pre-fill query parameters', 'routemark' ) }
+						help={ __( "List the route's arguments as switched-off rows in the Params tab.", 'routemark' ) }
 					>
 						<Toggle
 							checked={ settings.suggestParams }
 							onChange={ ( suggestParams ) => onChange( { suggestParams } ) }
-							label={ __( 'Pre-fill query parameters', 'restbench' ) }
+							label={ __( 'Pre-fill query parameters', 'routemark' ) }
 						/>
 					</Row>
-					<Row label={ __( 'Code tab opens on', 'restbench' ) } htmlFor="rb-snippet-lang">
+					<Row label={ __( 'Code tab opens on', 'routemark' ) } htmlFor="rmk-snippet-lang">
 						<select
-							id="rb-snippet-lang"
-							className="rb-input"
+							id="rmk-snippet-lang"
+							className="rmk-input"
 							value={ settings.snippetLanguage }
 							onChange={ ( e ) => onChange( { snippetLanguage: e.target.value as SnippetKind } ) }
 						>
@@ -179,28 +179,28 @@ export default function SettingsView( { settings, routes, historyCount, status, 
 				</div>
 			</section>
 
-			<section className="rb-overview-section">
-				<h3 className="rb-section-title">{ __( 'Display', 'restbench' ) }</h3>
-				<div className="rb-settings-card">
-					<Row label={ __( 'Theme', 'restbench' ) }>
+			<section className="rmk-overview-section">
+				<h3 className="rmk-section-title">{ __( 'Display', 'routemark' ) }</h3>
+				<div className="rmk-settings-card">
+					<Row label={ __( 'Theme', 'routemark' ) }>
 						<Choice
-							label={ __( 'Theme', 'restbench' ) }
+							label={ __( 'Theme', 'routemark' ) }
 							value={ settings.theme }
 							onChange={ ( theme ) => onChange( { theme } ) }
 							options={ [
-								{ value: 'light', label: __( 'Light', 'restbench' ) },
-								{ value: 'dark', label: __( 'Dark', 'restbench' ) },
+								{ value: 'light', label: __( 'Light', 'routemark' ) },
+								{ value: 'dark', label: __( 'Dark', 'routemark' ) },
 							] }
 						/>
 					</Row>
 					<Row
-						label={ __( 'Open JSON responses', 'restbench' ) }
-						help={ __( 'How many levels of a response are expanded when it comes in.', 'restbench' ) }
-						htmlFor="rb-json-depth"
+						label={ __( 'Open JSON responses', 'routemark' ) }
+						help={ __( 'How many levels of a response are expanded when it comes in.', 'routemark' ) }
+						htmlFor="rmk-json-depth"
 					>
 						<select
-							id="rb-json-depth"
-							className="rb-input"
+							id="rmk-json-depth"
+							className="rmk-input"
 							value={ settings.jsonDepth }
 							onChange={ ( e ) => onChange( { jsonDepth: Number( e.target.value ) } ) }
 						>
@@ -208,7 +208,7 @@ export default function SettingsView( { settings, routes, historyCount, status, 
 								<option key={ n } value={ n }>
 									{ sprintf(
 										/* translators: %d: number of levels */
-										_n( '%d level', '%d levels', n, 'restbench' ),
+										_n( '%d level', '%d levels', n, 'routemark' ),
 										n
 									) }
 								</option>
@@ -218,25 +218,25 @@ export default function SettingsView( { settings, routes, historyCount, status, 
 				</div>
 			</section>
 
-			<section className="rb-overview-section">
-				<h3 className="rb-section-title">{ __( 'Hidden namespaces', 'restbench' ) }</h3>
-				<p className="rb-muted rb-note">
-					{ __( "Hide namespaces you never touch from the sidebar and search. They still show up in the overview, so you won't lose track of them.", 'restbench' ) }
+			<section className="rmk-overview-section">
+				<h3 className="rmk-section-title">{ __( 'Hidden namespaces', 'routemark' ) }</h3>
+				<p className="rmk-muted rmk-note">
+					{ __( "Hide namespaces you never touch from the sidebar and search. They still show up in the overview, so you won't lose track of them.", 'routemark' ) }
 				</p>
-				<div className="rb-settings-card rb-ns-checks">
+				<div className="rmk-settings-card rmk-ns-checks">
 					{ groups.map( ( g ) => {
-						const id = `rb-hide-${ g.namespace.replace( /[^a-z0-9]/gi, '-' ) || 'root' }`;
+						const id = `rmk-hide-${ g.namespace.replace( /[^a-z0-9]/gi, '-' ) || 'root' }`;
 						return (
-							<label key={ g.namespace } className="rb-ns-check" htmlFor={ id }>
+							<label key={ g.namespace } className="rmk-ns-check" htmlFor={ id }>
 								<input
 									id={ id }
 									type="checkbox"
 									checked={ hidden.has( g.namespace ) }
 									onChange={ () => toggleNamespace( g.namespace ) }
 								/>
-								<code>{ g.namespace || __( '(root)', 'restbench' ) }</code>
-								<span className="rb-muted">{ groupSource( g.routes ) ?? '' }</span>
-								<span className="rb-ns-check-count">{ g.routes.length }</span>
+								<code>{ g.namespace || __( '(root)', 'routemark' ) }</code>
+								<span className="rmk-muted">{ groupSource( g.routes ) ?? '' }</span>
+								<span className="rmk-ns-check-count">{ g.routes.length }</span>
 							</label>
 						);
 					} ) }

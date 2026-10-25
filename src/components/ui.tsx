@@ -34,7 +34,7 @@ export type IconName = keyof typeof PATHS;
 export function Icon( { name, size = 16 }: { name: IconName; size?: number } ) {
 	return (
 		<svg
-			className="rb-icon"
+			className="rmk-icon"
 			width={ size }
 			height={ size }
 			viewBox="0 0 24 24"
@@ -51,20 +51,23 @@ export function Icon( { name, size = 16 }: { name: IconName; size?: number } ) {
 	);
 }
 
-// Logo. Fills come from CSS so it follows the theme.
+// Logo: the CC Software hex well, with a route running to a marker inside it.
+// Same colors in both themes, since the well itself is always dark.
 export function Mark( { size = 24 }: { size?: number } ) {
 	return (
-		<svg className="rb-mark" width={ size } height={ size } viewBox="0 0 48 48" aria-hidden="true" focusable="false">
-			<rect className="rb-mark-bar" x="9" y="24" width="8" height="14" rx="2" opacity="0.55" />
-			<rect className="rb-mark-bar" x="20" y="8" width="8" height="30" rx="2" />
-			<rect className="rb-mark-bar" x="31" y="17" width="8" height="21" rx="2" opacity="0.8" />
-			<rect className="rb-mark-base" x="5" y="40" width="38" height="3" rx="1.5" />
+		<svg className="rmk-mark" width={ size } height={ size } viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+			<path d="M24 2 43.05 13v22L24 46 4.95 35V13z" fill="#3b82f6" />
+			<path d="M24 8.5 37.42 16.25v15.5L24 39.5 10.58 31.75v-15.5z" fill="#16181b" />
+			<path d="M16 31.5 21.5 25l5 3.5 5.5-8" fill="none" stroke="#93c5fd" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+			<circle cx="16" cy="31.5" r="2.2" fill="#93c5fd" />
+			<circle cx="32" cy="20" r="3.6" fill="#ffffff" />
+			<circle cx="32" cy="20" r="1.5" fill="#1e40af" />
 		</svg>
 	);
 }
 
 export function Method( { method, size = 'md' }: { method: string; size?: 'sm' | 'md' | 'lg' } ) {
-	return <span className={ `rb-method rb-method--${ method.toLowerCase() } rb-method--${ size }` }>{ method }</span>;
+	return <span className={ `rmk-method rmk-method--${ method.toLowerCase() } rmk-method--${ size }` }>{ method }</span>;
 }
 
 // <wbr> after each slash so long routes wrap somewhere sensible
@@ -79,10 +82,10 @@ function withBreaks( text: string ) {
 
 export function PathText( { template }: { template: string } ) {
 	return (
-		<span className="rb-path">
+		<span className="rmk-path">
 			{ splitTemplate( template ).map( ( part, i ) =>
 				part.param ? (
-					<span key={ i } className="rb-path-param">
+					<span key={ i } className="rmk-path-param">
 						{ part.text }
 					</span>
 				) : (
@@ -98,7 +101,7 @@ export function CopyButton( { text, label }: { text: string; label?: string } ) 
 	return (
 		<button
 			type="button"
-			className="rb-btn rb-btn--ghost"
+			className="rmk-btn rmk-btn--ghost"
 			onClick={ async () => {
 				if ( await copyText( text ) ) {
 					setDone( true );
@@ -107,7 +110,7 @@ export function CopyButton( { text, label }: { text: string; label?: string } ) 
 			} }
 		>
 			<Icon name={ done ? 'check' : 'copy' } size={ 14 } />
-			{ done ? __( 'Copied', 'restbench' ) : label ?? __( 'Copy', 'restbench' ) }
+			{ done ? __( 'Copied', 'routemark' ) : label ?? __( 'Copy', 'routemark' ) }
 		</button>
 	);
 }
@@ -133,8 +136,8 @@ export function Tabs< T extends string >( {
 	trailing?: ReactNode;
 } ) {
 	return (
-		<div className="rb-tabs">
-			<div className="rb-tabs-list" role="tablist" aria-label={ label }>
+		<div className="rmk-tabs">
+			<div className="rmk-tabs-list" role="tablist" aria-label={ label }>
 				{ tabs
 					.filter( ( t ) => ! t.hidden )
 					.map( ( t ) => (
@@ -143,15 +146,15 @@ export function Tabs< T extends string >( {
 							type="button"
 							role="tab"
 							aria-selected={ t.id === active }
-							className={ `rb-tab${ t.id === active ? ' is-active' : '' }` }
+							className={ `rmk-tab${ t.id === active ? ' is-active' : '' }` }
 							onClick={ () => onChange( t.id ) }
 						>
 							{ t.label }
-							{ !! t.count && <span className="rb-tab-count">{ t.count }</span> }
+							{ !! t.count && <span className="rmk-tab-count">{ t.count }</span> }
 						</button>
 					) ) }
 			</div>
-			{ trailing && <div className="rb-tabs-trailing">{ trailing }</div> }
+			{ trailing && <div className="rmk-tabs-trailing">{ trailing }</div> }
 		</div>
 	);
 }
@@ -172,7 +175,7 @@ export function Toggle( {
 			aria-checked={ checked }
 			aria-label={ label }
 			title={ label }
-			className={ `rb-switch${ checked ? ' is-on' : '' }` }
+			className={ `rmk-switch${ checked ? ' is-on' : '' }` }
 			onClick={ () => onChange( ! checked ) }
 		>
 			<span />
