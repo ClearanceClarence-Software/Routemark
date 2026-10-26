@@ -103,3 +103,39 @@ test( 'the theme button switches and saves', async ( { page } ) => {
 	await page.waitForSelector( '.rmk-overview' );
 	await expect( page.locator( '.rmk' ) ).toHaveAttribute( 'data-theme', 'dark' );
 } );
+
+test( 'without Pro: a "Get Pro" link on the Plugins screen and a card at the bottom of Settings', async ( { page } ) => {
+	await openRoutemark( page );
+	const url = await page.evaluate( () => ( window as unknown as { routemarkSettings?: { getPro?: string } } ).routemarkSettings?.getPro ?? '' );
+	expect( url ).toMatch( /^https:\/\// );
+
+	await page.getByRole( 'button', { name: 'Settings', exact: true } ).click();
+	const card = page.locator( '.rmk-pro-card' );
+	await expect( card ).toContainText( 'Export to OpenAPI 3.1, Postman and TypeScript' );
+	await expect( card.getByRole( 'link', { name: 'See Routemark Pro' } ) ).toHaveAttribute( 'href', url );
+
+	await page.goto( '/wp-admin/plugins.php' );
+	const link = page.locator( 'tr[data-slug="routemark"] .routemark-get-pro' );
+	await expect( link ).toHaveText( 'Get Pro' );
+	await expect( link ).toHaveAttribute( 'href', url );
+	await expect( link ).toHaveAttribute( 'target', '_blank' );
+} );
+
+test( 'the launch offer: code, a checkout link with the coupon, gone after the end date', async ( { page } ) => {
+	await openRoutemark( page );
+	await page.getByRole( 'button', { name: 'Settings', exact: true } ).click();
+	const offer = page.locator( '.rmk-pro-card .rmk-pro-offer' );
+	await expect( offer ).toContainText( 'first 100 buyers' );
+	await expect( offer.locator( 'code' ) ).toHaveText( 'EARLY50' );
+	const href = await offer.getByRole( 'link', { name: 'Claim 50% off' } ).getAttribute( 'href' );
+	const url = new URL( href! );
+	expect( url.searchParams.get( 'coupon' ) ).toBe( 'EARLY50' );
+	expect( url.searchParams.get( 'licenses' ) ).toBe( 'unlimited' );
+	expect( url.searchParams.get( 'billing_cycle' ) ).toBe( 'lifetime' );
+
+	await page.goto( '/wp-admin/tools.php?page=routemark&routemark_test_offer=ended' );
+	await page.waitForSelector( '.rmk-overview' );
+	await page.getByRole( 'button', { name: 'Settings', exact: true } ).click();
+	await expect( page.locator( '.rmk-pro-card' ) ).toBeVisible();
+	await expect( page.locator( '.rmk-pro-offer' ) ).toHaveCount( 0 );
+} );

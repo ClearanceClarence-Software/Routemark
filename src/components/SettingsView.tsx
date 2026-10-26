@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 import { groupRoutes, groupSource } from '../lib/routes';
 import { SNIPPET_LABELS, type SnippetKind } from '../lib/snippets';
 import type { RouteInfo, Settings } from '../types';
-import { Toggle } from './ui';
+import { CopyButton, Icon, Mark, Toggle } from './ui';
 
 interface Props {
 	settings: Settings;
@@ -242,6 +242,71 @@ export default function SettingsView( { settings, routes, historyCount, status, 
 					} ) }
 				</div>
 			</section>
+
+			{ !! window.routemarkSettings?.getPro && (
+				<section className="rmk-overview-section rmk-pro-card" aria-labelledby="rmk-pro-card-title">
+					{ !! window.routemarkSettings.offer && <LaunchOffer offer={ window.routemarkSettings.offer } /> }
+					<div className="rmk-pro-card-main">
+						<h3 className="rmk-pro-card-brand" id="rmk-pro-card-title">
+							<Mark size={ 34 } />
+							<span className="rmk-brand-name">
+								Route<em>mark</em>
+							</span>
+							<span className="rmk-brand-edition">{ __( 'Pro', 'routemark' ) }</span>
+						</h3>
+						<p className="rmk-pro-card-lede">{ __( 'Know what every plugin update did to your REST API.', 'routemark' ) }</p>
+						<ul className="rmk-pro-card-list">
+							{ [
+								__( 'Snapshots of every route, and a diff of what a plugin update changed', 'routemark' ),
+								__( 'An email when a route that changes data suddenly works for anyone', 'routemark' ),
+								__( 'Export to OpenAPI 3.1, Postman and TypeScript', 'routemark' ),
+							].map( ( line ) => (
+								<li key={ line }>
+									<Icon name="check" size={ 16 } />
+									<span>{ line }</span>
+								</li>
+							) ) }
+						</ul>
+					</div>
+					<div className="rmk-pro-card-cta">
+						<a className="rmk-btn rmk-btn--primary rmk-pro-card-button" href={ window.routemarkSettings.getPro } target="_blank" rel="noopener noreferrer">
+							{ __( 'See Routemark Pro', 'routemark' ) }
+							<Icon name="send" size={ 15 } />
+						</a>
+						<p className="rmk-pro-card-note">{ __( 'A separate plugin. Nothing in this one is locked or limited.', 'routemark' ) }</p>
+					</div>
+				</section>
+			) }
+		</div>
+	);
+}
+
+/** The launch coupon, as a strip across the top of the Pro card. */
+function LaunchOffer( { offer }: { offer: { code: string; ends: string; url: string } } ) {
+	const ends = new Date( `${ offer.ends }T12:00:00` ).toLocaleDateString( document.documentElement.lang || undefined, {
+		day: 'numeric',
+		month: 'long',
+		year: 'numeric',
+	} );
+	return (
+		<div className="rmk-pro-offer">
+			<span className="rmk-pro-offer-tag">{ __( 'Launch offer', 'routemark' ) }</span>
+			<p className="rmk-pro-offer-text">
+				<strong>{ __( '50% off Unlimited sites, Lifetime', 'routemark' ) }</strong>{ ' ' }
+				{ sprintf(
+					/* translators: %s: the last day of the offer, e.g. December 31, 2026 */
+					__( 'for the first 100 buyers, until %s.', 'routemark' ),
+					ends
+				) }
+			</p>
+			<div className="rmk-pro-offer-actions">
+				<code>{ offer.code }</code>
+				<CopyButton text={ offer.code } label={ __( 'Copy code', 'routemark' ) } />
+				<a className="rmk-pro-offer-link" href={ offer.url } target="_blank" rel="noopener noreferrer">
+					{ __( 'Claim 50% off', 'routemark' ) }
+					<Icon name="send" size={ 14 } />
+				</a>
+			</div>
 		</div>
 	);
 }

@@ -4,7 +4,7 @@ Tags: rest api, developer, debug, headless, json
 Requires at least: 6.6
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.3.1
+Stable tag: 0.3.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -100,11 +100,13 @@ Check who you're sending as. Unless you picked someone under "Send as", you get 
 
 = Can other plugins add to Routemark? =
 
-Yes. There are PHP hooks (routemark_loaded, routemark_app_data, routemark_enqueue_assets) and JavaScript filters through wp.hooks for adding panels, workspace tabs, response actions, code languages and Report findings. A broken add-on can't take Routemark down with it. The details and an example add-on are on GitHub.
+Yes. There are PHP hooks (routemark_loaded, routemark_app_data, routemark_enqueue_assets, routemark_menu_title) and JavaScript filters through wp.hooks for adding panels, workspace tabs, response actions, code languages and Report findings. A broken add-on can't take Routemark down with it. The details and an example add-on are on GitHub.
 
-= Will there be a paid version? =
+= Is there a paid version? =
 
-Maybe. If it happens it'll be a separate add-on plugin. Nothing in this plugin is locked or limited.
+Yes, Routemark Pro: snapshots of your routes with a diff of what each plugin update changed, email alerts when a route that changes data becomes open to anyone, and export to OpenAPI, Postman and TypeScript. It's a separate plugin that adds to this one. Nothing in this plugin is locked or limited, and it doesn't advertise beyond a link on the Plugins screen and a card at the bottom of Settings.
+
+Get Routemark Pro: https://checkout.freemius.com/plugin/42850/plan/74584/
 
 == Screenshots ==
 
@@ -135,6 +137,10 @@ Routemark bundles the Atkinson Hyperlegible Next and Atkinson Hyperlegible Mono 
 
 == Changelog ==
 
+= 0.3.2 =
+* New: a "Get Pro" link on the Plugins screen and a short Routemark Pro card at the bottom of Settings. Both go away once Routemark Pro is installed. Until December 31, 2026, the card also shows a launch coupon for Routemark Pro.
+* For developers: add-ons can now set how the top bar shows the product (a badge after the name and their own version, through the routemark.brand filter), rename the Tools menu entry and page title (routemark_menu_title), and give their panels an icon.
+
 = 0.3.1 =
 * For developers: other plugins can now add to Routemark. PHP hooks (routemark_loaded, routemark_app_data, routemark_enqueue_assets) and wp.hooks filters for panels, workspace tabs, response actions, code languages and Report findings, plus a routemark.requestSent action after each request. A broken add-on shows an error in its own spot and can't take Routemark down. Details and an example add-on are in the GitHub readme.
 * The app now starts once every script on the page has loaded, so add-ons are in place from the first render.
@@ -152,6 +158,9 @@ Routemark bundles the Atkinson Hyperlegible Next and Atkinson Hyperlegible Mono 
 * First release on WordPress.org.
 
 == Upgrade Notice ==
+
+= 0.3.2 =
+More extension points for add-ons. Nothing changes if you don't use any.
 
 = 0.3.1 =
 Adds extension points for add-ons. Nothing changes if you don't use any.

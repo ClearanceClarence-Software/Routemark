@@ -158,8 +158,12 @@ declare global {
 			userId: number;
 			settings?: Settings;
 			sendAs?: { nonce: string; name: string };
+			// Where "Get Pro" goes. Empty when Pro is installed.
+			getPro?: string;
+			/** Launch coupon for the Pro card, null when there is none. */
+			offer?: { code: string; ends: string; url: string } | null;
 		};
 		// Set by index.tsx for add-ons. See src/lib/extensions.tsx.
-		routemark?: { version: string; apiVersion: number; ui: Record< string, unknown > };
+		routemark?: { version: string; apiVersion: number; ui: Record< string, unknown >; icons: string[] };
 	}
 }

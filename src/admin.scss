@@ -62,6 +62,7 @@
 	--rmk-primary-edge: transparent;
 	// the "mark" half of the wordmark
 	--rmk-brand-word: #1e40af;
+	--rmk-on-brand: #ffffff;
 
 	--rmk-param: #9a4c00;
 	--rmk-type: #0f6e66;
@@ -118,6 +119,7 @@
 	--rmk-on-primary: #ffffff;
 	--rmk-primary-edge: transparent;
 	--rmk-brand-word: #93c5fd;
+	--rmk-on-brand: #0b1530;
 
 	--rmk-param: #ffc86b;
 	--rmk-type: #6ad7ca;
@@ -733,6 +735,19 @@
 .rmk-brand-name {
 	font-size: 20px;
 	line-height: 1;
+}
+
+.rmk-brand-edition {
+	padding: 3px 6px 2px;
+	font-family: "Bricolage Grotesque", var(--rmk-sans);
+	font-size: 11px;
+	font-weight: 700;
+	line-height: 1;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: var(--rmk-on-brand);
+	background: var(--rmk-brand-word);
+	border-radius: 4px;
 }
 
 .rmk-brand-version {
@@ -2668,5 +2683,163 @@
 	.is-core & {
 		font-weight: 400;
 		color: var(--rmk-text-3);
+	}
+}
+
+// Routemark Pro card in Settings (only shown without Pro)
+
+.rmk .rmk-pro-card {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	gap: 24px 40px;
+	align-items: center;
+	padding: 24px 28px;
+	background:
+		radial-gradient(120% 140% at 100% 0%, color-mix(in srgb, var(--rmk-brand-word) 14%, transparent), transparent 60%),
+		color-mix(in srgb, var(--rmk-brand-word) 5%, var(--rmk-panel));
+	border: 1px solid color-mix(in srgb, var(--rmk-brand-word) 30%, var(--rmk-line));
+	border-radius: 10px;
+}
+
+.rmk .rmk-pro-card-brand {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin: 0;
+
+	.rmk-brand-name {
+		font-size: 22px;
+	}
+}
+
+.rmk .rmk-pro-card-lede {
+	margin: 10px 0 14px;
+	font-size: 16px;
+	font-weight: 600;
+	color: var(--rmk-text);
+}
+
+.rmk .rmk-pro-card-list {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+
+	li {
+		display: flex;
+		align-items: flex-start;
+		gap: 10px;
+		margin: 6px 0;
+		font-size: 14.5px;
+		color: var(--rmk-text);
+	}
+
+	.rmk-icon {
+		flex: none;
+		margin-top: 3px;
+		color: var(--rmk-brand-word);
+	}
+}
+
+.rmk .rmk-pro-card-cta {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 10px;
+	text-align: center;
+}
+
+.rmk a.rmk-pro-card-button {
+	padding: 12px 22px;
+	font-size: 15px;
+	text-decoration: none;
+	box-shadow: 0 6px 18px color-mix(in srgb, var(--rmk-primary) 35%, transparent);
+}
+
+.rmk .rmk-pro-card-note {
+	max-width: 220px;
+	margin: 0;
+	font-size: 12.5px;
+	line-height: 1.4;
+	color: var(--rmk-text-3);
+}
+
+.rmk .rmk-pro-offer {
+	display: flex;
+	flex-wrap: wrap;
+	grid-column: 1 / -1;
+	gap: 10px 14px;
+	align-items: center;
+	padding: 10px 14px;
+	background: color-mix(in srgb, #f59e0b 12%, var(--rmk-panel));
+	border: 1px dashed color-mix(in srgb, #f59e0b 60%, var(--rmk-line));
+	border-radius: 8px;
+}
+
+.rmk .rmk-pro-offer-tag {
+	padding: 3px 8px;
+	font-size: 11px;
+	font-weight: 700;
+	color: #451a03;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	background: #fbbf24;
+	border-radius: 999px;
+}
+
+.rmk .rmk-pro-offer-text {
+	flex: 1 1 0;
+	min-width: 0;
+	margin: 0;
+	font-size: 14px;
+	color: var(--rmk-text);
+}
+
+.rmk .rmk-pro-offer-actions {
+	display: flex;
+	flex: 1 0 100%;
+	flex-wrap: wrap;
+	gap: 8px 6px;
+	align-items: center;
+
+	code {
+		padding: 4px 10px;
+		font-size: 14px;
+		font-weight: 700;
+		letter-spacing: 0.04em;
+		color: var(--rmk-text);
+		background: var(--rmk-panel);
+		border: 1px solid var(--rmk-line);
+		border-radius: 6px;
+	}
+}
+
+.rmk a.rmk-pro-offer-link {
+	display: inline-flex;
+	margin-left: 10px;
+	gap: 6px;
+	align-items: center;
+	font-weight: 600;
+	color: var(--rmk-brand-word);
+	text-decoration: none;
+
+	&:hover,
+	&:focus {
+		text-decoration: underline;
+	}
+}
+
+@media (max-width: 782px) {
+	.rmk .rmk-pro-card {
+		grid-template-columns: minmax(0, 1fr);
+		padding: 20px;
+	}
+
+	.rmk .rmk-pro-card-cta {
+		align-items: flex-start;
+		text-align: start;
+	}
+
+	.rmk .rmk-pro-card-note {
+		max-width: none;
 	}
 }

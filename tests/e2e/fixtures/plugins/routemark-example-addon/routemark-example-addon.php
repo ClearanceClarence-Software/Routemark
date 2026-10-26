@@ -22,6 +22,14 @@ add_action(
 			}
 		);
 
+		// The Tools menu entry and the browser tab title.
+		add_filter(
+			'routemark_menu_title',
+			function () {
+				return 'Routemark Example';
+			}
+		);
+
 		// Only fires on the Routemark page. Depend on Routemark's handle so this loads after it.
 		add_action(
 			'routemark_enqueue_assets',

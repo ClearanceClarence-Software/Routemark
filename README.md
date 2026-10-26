@@ -203,6 +203,7 @@ Other plugins can add to Routemark through regular WordPress hooks. Everything a
 | `routemark_loaded` | action | Routemark is active. Hook your add-on in here, and check `ROUTEMARK_API_VERSION` first. |
 | `routemark_app_data` | filter | The data the app starts with (`window.routemarkSettings`). Put yours under your own key. |
 | `routemark_enqueue_assets` | action | Only on the Routemark page. Enqueue your script with the `$handle` it passes as a dependency. |
+| `routemark_menu_title` | filter | The name in the Tools menu and the browser tab, e.g. `Routemark Pro`. |
 
 ```php
 add_action( 'routemark_loaded', function () {
@@ -221,7 +222,8 @@ Add `Requires Plugins: routemark` to your plugin header so WordPress won't activ
 
 | Hook | Type | Gets | Return / do |
 | --- | --- | --- | --- |
-| `routemark.panels` | filter | list | Add `{ id, label, render( { routes, settings, openRoute } ) }` for a top bar button and a full-width view. |
+| `routemark.panels` | filter | list | Add `{ id, label, icon?, render( { routes, settings, openRoute } ) }` for a top bar button and a full-width view. `icon` is one of `window.routemark.icons`, the default is a puzzle piece. |
+| `routemark.brand` | filter | `{}` | Return `{ edition, version }`: `edition` shows as a badge after the wordmark (keep it short, `Pro`), `version` goes after Routemark's own (`Pro 0.1.0`). |
 | `routemark.workspaceTabs` | filter | list | Add `{ id, label, render( { route, draft, path, url, sendAs, result } ) }` for a tab next to Params, Docs and the rest. |
 | `routemark.responseActions` | filter | list | Add `{ id, label, onClick( context ) }` for a button in the response toolbar. |
 | `routemark.snippetLanguages` | filter | list | Add `{ id, label, build( { path, url, draft } ) }` for a language in the Code tab. |
@@ -264,7 +266,7 @@ Run `phpcs` in the repo root to check against the WordPress Coding Standards (it
 ### Releasing
 
 1. Bump the version in `routemark.php` (header and `ROUTEMARK_VERSION`), `package.json` and `Stable tag` in `readme.txt`, and add a changelog entry to `readme.txt`.
-2. Commit, then `git tag v0.3.2 && git push --follow-tags`.
+2. Commit, then `git tag v0.3.3 && git push --follow-tags`.
 3. The release workflow checks the tag matches the version, builds the zip and attaches it to a GitHub release.
 
 Everything in `.wordpress-org/` goes in the `assets/` folder of the plugin's SVN repository on WordPress.org, not in the zip. That includes `blueprints/blueprint.json`, which gives the plugin page a Live Preview button: it opens Routemark in WordPress Playground, logged in, with an editor, an author and a subscriber to try Send as with.

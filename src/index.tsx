@@ -10,7 +10,7 @@ import '@fontsource/bricolage-grotesque/latin-700.css';
 
 import App from './App';
 import JsonView from './components/JsonView';
-import { CopyButton, Icon, Method, PathText, Toggle } from './components/ui';
+import { CopyButton, Icon, ICON_NAMES, Method, PathText, Toggle } from './components/ui';
 import { EXTENSION_API } from './lib/extensions';
 import './admin.scss';
 
@@ -20,6 +20,7 @@ window.routemark = {
 	version: window.routemarkSettings?.version ?? '',
 	apiVersion: EXTENSION_API,
 	ui: { CopyButton, Icon, JsonView, Method, PathText, Toggle },
+	icons: ICON_NAMES,
 };
 
 // Add-on scripts load after ours (they depend on it), so wait until every

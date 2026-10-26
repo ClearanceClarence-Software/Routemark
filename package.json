@@ -1,6 +1,6 @@
 {
   "name": "routemark",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Browse every REST API route on your site and send test requests to it from wp-admin.",
   "private": true,
   "license": "GPL-2.0-or-later",

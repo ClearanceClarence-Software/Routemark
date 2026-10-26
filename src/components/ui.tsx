@@ -31,11 +31,16 @@ const PATHS = {
 	cpu: 'M7 7h10v10H7zM10 3v4M14 3v4M10 17v4M14 17v4M3 10h4M3 14h4M17 10h4M17 14h4',
 	hook: 'M12 3v10a4 4 0 1 1-8 0M12 3l3 3M12 3 9 6',
 	puzzle: 'M9 4a2 2 0 1 1 4 0v2h4v4h-1a2 2 0 1 0 0 4h1v4h-4v-1a2 2 0 1 0-4 0v1H5v-4h1a2 2 0 1 0 0-4H5V6h4V4Z',
+	camera: 'M4 8h3l2-3h6l2 3h3v11H4zM12 10a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z',
+	download: 'M12 4v11M7 10l5 5 5-5M5 20h14',
 	shield: 'M12 3 5 6v5c0 4.5 3 8.3 7 10 4-1.7 7-5.5 7-10V6l-7-3Z',
 	user: 'M12 4a4 4 0 1 0 0 8 4 4 0 0 0 0-8ZM4 21a8 8 0 0 1 16 0',
 } as const;
 
 export type IconName = keyof typeof PATHS;
+
+export const ICON_NAMES = Object.keys( PATHS ) as IconName[];
+export const isIconName = ( name: unknown ): name is IconName => typeof name === 'string' && name in PATHS;
 
 export function Icon( { name, size = 16 }: { name: IconName; size?: number } ) {
 	return (

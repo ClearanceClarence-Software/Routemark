@@ -38,7 +38,19 @@ export interface AppContext {
 export interface PanelDef {
 	id: string;
 	label: string;
+	/** One of Routemark's icon names (window.routemark.icons). Defaults to a puzzle piece. */
+	icon?: string;
 	render: ( ctx: AppContext ) => ReactNode;
+}
+
+/**
+ * How the top bar presents the product. An add-on edition (Pro, say) sets
+ * edition, which shows as a small badge after the wordmark, and version,
+ * which goes after Routemark's own version number.
+ */
+export interface BrandDef {
+	edition?: string;
+	version?: string;
 }
 
 /** What the workspace knows about the request on screen. */
@@ -109,6 +121,20 @@ function list< T extends { id: string } >( name: string, base: T[] ): T[] {
 }
 
 export const getPanels = () => list< PanelDef >( 'routemark.panels', [] );
+
+/** Short plain strings only: this ends up in the top bar on every screen. */
+export function getBrand(): { edition: string; version: string } {
+	const none = { edition: '', version: '' };
+	return safely( 'routemark.brand', none, () => {
+		const out = applyFilters( 'routemark.brand', {} ) as unknown;
+		if ( ! out || typeof out !== 'object' ) {
+			return none;
+		}
+		const brand = out as Record< string, unknown >;
+		const clean = ( value: unknown, max: number ) => ( typeof value === 'string' ? value.trim().slice( 0, max ) : '' );
+		return { edition: clean( brand.edition, 12 ), version: clean( brand.version, 40 ) };
+	} );
+}
 export const getWorkspaceTabs = () => list< WorkspaceTabDef >( 'routemark.workspaceTabs', [] );
 export const getResponseActions = () => list< ResponseActionDef >( 'routemark.responseActions', [] );
 export const getSnippets = () => list< SnippetDef >( 'routemark.snippetLanguages', [] );

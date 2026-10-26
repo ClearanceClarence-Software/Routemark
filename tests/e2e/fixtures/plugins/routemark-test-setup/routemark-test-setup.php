@@ -126,3 +126,15 @@ add_action(
 		);
 	}
 );
+
+// ?routemark_test_offer=ended moves the launch offer's end date to yesterday.
+add_filter(
+	'routemark_launch_offer',
+	function ( $offer ) {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- test fixture.
+		if ( is_array( $offer ) && isset( $_GET['routemark_test_offer'] ) && 'ended' === $_GET['routemark_test_offer'] ) {
+			$offer['ends'] = wp_date( 'Y-m-d', time() - DAY_IN_SECONDS );
+		}
+		return $offer;
+	}
+);

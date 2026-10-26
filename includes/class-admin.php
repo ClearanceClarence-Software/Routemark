@@ -39,9 +39,18 @@ class Admin {
 	 * Adds Tools > Routemark.
 	 */
 	public function add_page(): void {
+		/**
+		 * The name in the Tools menu and the browser tab. An add-on edition
+		 * can change it, e.g. to "Routemark Pro".
+		 *
+		 * @param string $title Menu and page title.
+		 */
+		$title = (string) apply_filters( 'routemark_menu_title', __( 'Routemark', 'routemark' ) );
+		$title = '' !== trim( wp_strip_all_tags( $title ) ) ? wp_strip_all_tags( $title ) : __( 'Routemark', 'routemark' );
+
 		$this->hook_suffix = (string) add_management_page(
-			__( 'Routemark', 'routemark' ),
-			__( 'Routemark', 'routemark' ),
+			$title,
+			$title,
 			self::CAPABILITY,
 			self::SLUG,
 			array( $this, 'render_page' )
@@ -72,7 +81,71 @@ class Admin {
 	public function action_links( array $links ): array {
 		$url = admin_url( 'tools.php?page=' . self::SLUG );
 		array_unshift( $links, '<a href="' . esc_url( $url ) . '">' . esc_html__( 'Open', 'routemark' ) . '</a>' );
+
+		// Only while Pro isn't installed. Once it is, Pro handles its own license.
+		if ( ! self::pro_installed() ) {
+			$links[] = sprintf(
+				'<a href="%1$s" target="_blank" rel="noopener noreferrer" class="routemark-get-pro">%2$s</a>',
+				esc_url( ROUTEMARK_PRO_URL ),
+				esc_html__( 'Get Pro', 'routemark' )
+			);
+		}
 		return $links;
+	}
+
+	/**
+	 * Is Routemark Pro installed and active? Licensed or not.
+	 *
+	 * @return bool
+	 */
+	public static function pro_installed(): bool {
+		return defined( 'ROUTEMARK_PRO_VERSION' );
+	}
+
+	/**
+	 * The launch offer shown on the Routemark Pro card, or null when there is
+	 * none. It switches itself off after the end date, so an old copy of the
+	 * plugin doesn't keep showing a code that no longer works. The coupon in
+	 * Freemius expires on the same date and is limited to 100 uses.
+	 *
+	 * @return array{code: string, ends: string, url: string}|null
+	 */
+	public static function launch_offer(): ?array {
+		if ( self::pro_installed() ) {
+			return null;
+		}
+
+		/**
+		 * Filters the launch offer. Return null to hide it.
+		 *
+		 * @param array|null $offer Coupon code and last day (Y-m-d, site time).
+		 */
+		$offer = apply_filters(
+			'routemark_launch_offer',
+			array(
+				'code' => 'EARLY50',
+				'ends' => '2026-12-31',
+			)
+		);
+		if ( ! is_array( $offer ) || empty( $offer['code'] ) || empty( $offer['ends'] ) ) {
+			return null;
+		}
+		if ( current_time( 'Y-m-d' ) > $offer['ends'] ) {
+			return null;
+		}
+
+		return array(
+			'code' => (string) $offer['code'],
+			'ends' => (string) $offer['ends'],
+			'url'  => add_query_arg(
+				array(
+					'licenses'      => 'unlimited',
+					'billing_cycle' => 'lifetime',
+					'coupon'        => rawurlencode( (string) $offer['code'] ),
+				),
+				ROUTEMARK_PRO_URL
+			),
+		);
 	}
 
 	/**
@@ -81,7 +154,7 @@ class Admin {
 	public function render_page(): void {
 		// The hidden h1 and wp-header-end are there so WordPress drops admin
 		// notices above the app instead of somewhere inside it.
-		echo '<h1 class="screen-reader-text">' . esc_html__( 'Routemark', 'routemark' ) . '</h1>';
+		echo '<h1 class="screen-reader-text">' . esc_html( get_admin_page_title() ) . '</h1>';
 		echo '<hr class="wp-header-end">';
 
 		if ( ! file_exists( $this->asset_file() ) ) {
@@ -136,6 +209,9 @@ class Admin {
 				'name'  => wp_get_current_user()->display_name,
 			),
 			'apiVersion' => ROUTEMARK_API_VERSION,
+			// For the Routemark Pro card in Settings. Empty once Pro is installed.
+			'getPro'     => self::pro_installed() ? '' : ROUTEMARK_PRO_URL,
+			'offer'      => self::launch_offer(),
 		);
 
 		/**

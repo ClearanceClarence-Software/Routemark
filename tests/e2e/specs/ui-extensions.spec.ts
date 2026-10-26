@@ -21,6 +21,24 @@ test( 'PHP side: app data filter and API version reach the page', async ( { page
 	expect( data.global.ui ).toEqual( expect.arrayContaining( [ 'Icon', 'Method', 'PathText', 'JsonView', 'CopyButton', 'Toggle' ] ) );
 } );
 
+test( 'brand: badge, add-on version, menu entry and tab title', async ( { page } ) => {
+	await openRoutemark( page );
+	await expect( page.locator( '.rmk-brand-edition' ) ).toHaveText( 'Example' );
+	await expect( page.locator( '.rmk-brand-version' ) ).toHaveText( /^\d+\.\d+\.\d+ · Example 1\.0$/ );
+	await expect( page.locator( '#adminmenu a[href="tools.php?page=routemark"]' ) ).toHaveText( 'Routemark Example' );
+	await expect( page ).toHaveTitle( /^Routemark Example/ );
+	await expect( page.locator( 'h1.screen-reader-text' ) ).toHaveText( 'Routemark Example' );
+} );
+
+test( 'a panel can pick its icon from Routemark\'s set', async ( { page } ) => {
+	await openRoutemark( page );
+	const icons = await page.evaluate( () => ( window as unknown as { routemark: { icons: string[] } } ).routemark.icons );
+	expect( icons ).toEqual( expect.arrayContaining( [ 'camera', 'download', 'puzzle' ] ) );
+	// The camera path, not the puzzle default.
+	const path = await page.getByRole( 'button', { name: 'Example', exact: true } ).locator( 'path' ).getAttribute( 'd' );
+	expect( path ).toMatch( /^M4 8h3l2-3h6l2 3h3v11H4z/ );
+} );
+
 test( 'a panel gets a top bar button, the app context, and can open a route', async ( { page } ) => {
 	const errors = watchErrors( page );
 	await openRoutemark( page );

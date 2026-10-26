@@ -14,6 +14,7 @@
 		{
 			id: 'example',
 			label: 'Example',
+			icon: 'camera',
 			render: ( { routes, openRoute } ) =>
 				el(
 					'div',
@@ -90,6 +91,10 @@
 			  ]
 			: findings;
 	} );
+
+	// How the top bar shows the product: a badge after the wordmark, and a
+	// version after Routemark's.
+	addFilter( 'routemark.brand', ns, ( brand ) => ( { ...brand, edition: 'Example', version: 'Example 1.0' } ) );
 
 	// After every request sent from the workspace.
 	addAction( 'routemark.requestSent', ns, ( event ) => {

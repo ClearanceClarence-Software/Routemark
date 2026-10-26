@@ -6,11 +6,11 @@ import Overview from './components/Overview';
 import ReportView from './components/ReportView';
 import SettingsView from './components/SettingsView';
 import Sidebar from './components/Sidebar';
-import { Icon, Mark } from './components/ui';
+import { Icon, isIconName, Mark } from './components/ui';
 import Workspace from './components/Workspace';
 import { useHashRoute, useStoredState } from './lib/hooks';
 import { filterRoutes, groupRoutes } from './lib/routes';
-import { ExtensionBoundary, ExtensionSlot, getPanels, useExtensions } from './lib/extensions';
+import { ExtensionBoundary, ExtensionSlot, getBrand, getPanels, useExtensions } from './lib/extensions';
 import { LOGGED_OUT } from './lib/request';
 import { initialSettings, saveSettings } from './lib/settings';
 import type { Draft, Filters, HistoryEntry, RoutesResponse, SendAsUser, Settings } from './types';
@@ -29,6 +29,7 @@ export default function App() {
 	const [ panel, setPanel ] = useState< string | null >( null );
 	useExtensions();
 	const extPanels = getPanels();
+	const brand = getBrand();
 	const showSettings = panel === 'settings';
 	const [ history, setHistory ] = useStoredState< HistoryEntry[] >( `routemark.history.${ window.routemarkSettings?.userId ?? 0 }`, [] );
 	const [ filters, setFilters ] = useState< Filters >( { search: '', methods: [], publicOnly: false } );
@@ -152,7 +153,11 @@ export default function App() {
 					<span className="rmk-brand-name">
 						Route<em>mark</em>
 					</span>
-					<span className="rmk-brand-version">{ window.routemarkSettings?.version ?? '' }</span>
+					{ brand.edition && <span className="rmk-brand-edition">{ brand.edition }</span> }
+					<span className="rmk-brand-version">
+						{ window.routemarkSettings?.version ?? '' }
+						{ brand.version && <span className="rmk-brand-addon-version"> · { brand.version }</span> }
+					</span>
 				</button>
 
 				<div className="rmk-topbar-root" title={ __( 'REST API root', 'routemark' ) }>
@@ -178,7 +183,7 @@ export default function App() {
 						aria-pressed={ panel === `ext:${ p.id }` }
 						onClick={ () => setPanel( panel === `ext:${ p.id }` ? null : `ext:${ p.id }` ) }
 					>
-						<Icon name="puzzle" size={ 16 } />
+						<Icon name={ isIconName( p.icon ) ? p.icon : 'puzzle' } size={ 16 } />
 						<span className="rmk-hide-sm">{ p.label }</span>
 					</button>
 				) ) }
