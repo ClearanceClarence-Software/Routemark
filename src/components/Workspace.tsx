@@ -4,6 +4,17 @@ import { __, sprintf } from '@wordpress/i18n';
 import { buildPath, fullUrl, hasBody, jsonError, missingParams, newDraft, redactDraft, redactPath, sampleBody, send, switchMethod, uid } from '../lib/request';
 import { endpointFor, routeMethods, routeToTemplate, sourceLabel, templateParams, typeLabel } from '../lib/routes';
 import { buildSnippet, SNIPPET_LABELS, type SnippetKind } from '../lib/snippets';
+import {
+	buildExtraSnippet,
+	ExtensionBoundary,
+	ExtensionSlot,
+	getResponseActions,
+	getSnippets,
+	getWorkspaceTabs,
+	requestSent,
+	type RequestContext,
+	useExtensions,
+} from '../lib/extensions';
 import { needsConfirm } from '../lib/settings';
 import type { Draft, HistoryEntry, HttpMethod, RouteInfo, RunResult, SendAsUser, Settings } from '../types';
 import CodeEditor from './CodeEditor';
@@ -14,7 +25,8 @@ import ResponsePanel from './ResponsePanel';
 import SendAs from './SendAs';
 import { CopyButton, Icon, PathText, Tabs } from './ui';
 
-type Tab = 'params' | 'body' | 'headers' | 'docs' | 'hooks' | 'code';
+// Add-on tabs are 'ext:<id>'.
+type Tab = 'params' | 'body' | 'headers' | 'docs' | 'hooks' | 'code' | `ext:${ string }`;
 
 interface Props {
 	route: RouteInfo;
@@ -31,7 +43,8 @@ export default function Workspace( { route, settings, preset, sendAs, onSendAs, 
 	// Who the shown response was sent as, which may not be who's picked now.
 	const [ resultAs, setResultAs ] = useState< SendAsUser | null >( null );
 	const [ running, setRunning ] = useState( false );
-	const [ snippet, setSnippet ] = useState< SnippetKind >( settings.snippetLanguage );
+	// A built-in language, or 'ext:<id>' for one an add-on added.
+	const [ snippet, setSnippet ] = useState< string >( settings.snippetLanguage );
 	const [ armed, setArmed ] = useState( false );
 
 	const template = routeToTemplate( route.route );
@@ -46,6 +59,16 @@ export default function Workspace( { route, settings, preset, sendAs, onSendAs, 
 	const enabledHeaders = draft.headers.filter( ( r ) => r.enabled && r.key ).length;
 	const canSend = ! running && missing.length === 0 && ! bodyError;
 	const destructive = draft.method === 'DELETE';
+
+	useExtensions();
+	const extTabs = getWorkspaceTabs();
+	const extActions = getResponseActions();
+	const extSnippets = getSnippets();
+	const context: RequestContext = { route, draft, path, url: fullUrl( path ), sendAs, result };
+	const extSnippet = extSnippets.find( ( d ) => `ext:${ d.id }` === snippet );
+	const snippetText = extSnippet
+		? buildExtraSnippet( extSnippet, { path, url: fullUrl( path ), draft } )
+		: buildSnippet( ( snippet in SNIPPET_LABELS ? snippet : 'apiFetch' ) as SnippetKind, path, draft );
 
 	const [ tab, setTab ] = useState< Tab >( () =>
 		params.length === 0 && draft.query.length === 0 && ! hasBody( draft.method ) ? 'docs' : 'params'
@@ -87,7 +110,8 @@ export default function Workspace( { route, settings, preset, sendAs, onSendAs, 
 			draft: redactDraft( draft ),
 			as: sendAs,
 		} );
-	}, [ canSend, confirmFirst, armed, path, draft, sendAs, route.route, onRecord ] );
+		requestSent( { route, draft, path, url: fullUrl( path ), sendAs, result: res } );
+	}, [ canSend, confirmFirst, armed, path, draft, sendAs, route, onRecord ] );
 
 	// Ctrl/Cmd+Enter sends, from anywhere on the page
 	const runRef = useRef( run );
@@ -224,6 +248,7 @@ export default function Workspace( { route, settings, preset, sendAs, onSendAs, 
 							{ id: 'docs', label: __( 'Docs', 'routemark' ) },
 							{ id: 'hooks', label: __( 'Hooks', 'routemark' ) },
 							{ id: 'code', label: __( 'Code', 'routemark' ) },
+							...extTabs.map( ( t ) => ( { id: `ext:${ t.id }` as Tab, label: t.label } ) ),
 						] }
 					/>
 
@@ -323,11 +348,24 @@ export default function Workspace( { route, settings, preset, sendAs, onSendAs, 
 
 						{ tab === 'hooks' && <HooksView route={ route } /> }
 
+						{ extTabs
+							.filter( ( t ) => tab === `ext:${ t.id }` )
+							.map( ( t ) => (
+								<div key={ t.id } className="rmk-section rmk-ext-tab">
+									<ExtensionBoundary key={ route.route } name={ t.label }>
+										<ExtensionSlot render={ () => t.render( context ) } />
+									</ExtensionBoundary>
+								</div>
+							) ) }
+
 						{ tab === 'code' && (
 							<div className="rmk-section">
 								<div className="rmk-section-bar">
 									<div className="rmk-seg" role="group" aria-label={ __( 'Snippet language', 'routemark' ) }>
-										{ ( Object.keys( SNIPPET_LABELS ) as SnippetKind[] ).map( ( k ) => (
+										{ [
+											...( Object.keys( SNIPPET_LABELS ) as SnippetKind[] ).map( ( k ) => ( { k: k as string, label: SNIPPET_LABELS[ k ] } ) ),
+											...extSnippets.map( ( d ) => ( { k: `ext:${ d.id }`, label: d.label } ) ),
+										].map( ( { k, label } ) => (
 											<button
 												key={ k }
 												type="button"
@@ -335,20 +373,27 @@ export default function Workspace( { route, settings, preset, sendAs, onSendAs, 
 												className={ snippet === k ? 'is-on' : '' }
 												onClick={ () => setSnippet( k ) }
 											>
-												{ SNIPPET_LABELS[ k ] }
+												{ label }
 											</button>
 										) ) }
 									</div>
 									<span className="rmk-spacer" />
-									<CopyButton text={ buildSnippet( snippet, path, draft ) } />
+									<CopyButton text={ snippetText } />
 								</div>
-								<pre className="rmk-pre rmk-codebox">{ buildSnippet( snippet, path, draft ) }</pre>
+								<pre className="rmk-pre rmk-codebox">{ snippetText }</pre>
 							</div>
 						) }
 					</div>
 				</section>
 
-				<ResponsePanel result={ result } sentAs={ resultAs } running={ running } jsonDepth={ settings.jsonDepth } />
+				<ResponsePanel
+					result={ result }
+					sentAs={ resultAs }
+					running={ running }
+					jsonDepth={ settings.jsonDepth }
+					actions={ extActions }
+					context={ context }
+				/>
 			</div>
 		</div>
 	);

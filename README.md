@@ -137,11 +137,12 @@ Symlink or copy the folder into `wp-content/plugins/` and activate it. On XAMPP 
 
 ### Tests
 
-The tests run against a real WordPress: the REST endpoints over HTTP, and the screens in Chromium, with [Playwright](https://playwright.dev). `wp-env` gives you that WordPress in Docker on http://localhost:8888, with Routemark and three fixture plugins active:
+The tests run against a real WordPress: the REST endpoints over HTTP, and the screens in Chromium, with [Playwright](https://playwright.dev). `wp-env` gives you that WordPress in Docker on http://localhost:8888, with Routemark and four fixture plugins active:
 
 - **Demo Shop**: well-behaved. A controller that extends core's, an open read-only route, and two filters on posts.
 - **Leaky Forms**: one badly registered route for each thing the Report should catch. Never put it on a real site.
 - **Routemark Test Setup**: creates the test users (jane, ali, sam, admin2, all with password `password`) and a few helper routes.
+- **Routemark Example Add-on**: uses every extension point, including a tab that throws on purpose.
 
 ```bash
 npm run build
@@ -165,6 +166,7 @@ includes/
   class-send-as.php           Send as: switching user for one request, GET routemark/v1/users
   class-request-stats.php     query count, PHP time and memory for requests sent from the app
   class-hooks.php             GET routemark/v1/hooks, who's hooked into a route
+src/lib/extensions.tsx        the extension points add-ons use (wp.hooks)
 src/                          the React app (TypeScript)
 scripts/zip.mjs               builds the install zip from an explicit file list
 tests/e2e/                    Playwright tests, plus the fixture plugins they run against
@@ -190,6 +192,57 @@ The Hooks tab gets its list from `GET routemark/v1/hooks?route=…`. It only acc
 
 Server numbers come from `Request_Stats`. The app sends `X-Routemark-Stats: 1`. At priority 1 on `rest_pre_dispatch`, before any Send as switch, it checks you're an admin and notes the time and query count. At the very end of `rest_post_dispatch`, which is the last moment headers can be added, it puts the difference in an `X-Routemark-Stats` response header as JSON, along with the whole-request totals from `timer_float()` and `get_num_queries()`.
 
+### Extending Routemark
+
+Other plugins can add to Routemark through regular WordPress hooks. Everything an add-on registers runs inside a try/catch or a React error boundary, so a broken add-on shows an error where its part would be and Routemark keeps working. `tests/e2e/fixtures/plugins/routemark-example-addon` uses every one of these, in plain JavaScript with no build step, and is a good place to start.
+
+**PHP**
+
+| Hook | Type | What it's for |
+| --- | --- | --- |
+| `routemark_loaded` | action | Routemark is active. Hook your add-on in here, and check `ROUTEMARK_API_VERSION` first. |
+| `routemark_app_data` | filter | The data the app starts with (`window.routemarkSettings`). Put yours under your own key. |
+| `routemark_enqueue_assets` | action | Only on the Routemark page. Enqueue your script with the `$handle` it passes as a dependency. |
+
+```php
+add_action( 'routemark_loaded', function () {
+	if ( 1 !== ROUTEMARK_API_VERSION ) {
+		return;
+	}
+	add_action( 'routemark_enqueue_assets', function ( $handle ) {
+		wp_enqueue_script( 'my-addon', plugins_url( 'addon.js', __FILE__ ), array( $handle, 'wp-hooks', 'wp-element' ), '1.0.0', true );
+	} );
+} );
+```
+
+Add `Requires Plugins: routemark` to your plugin header so WordPress won't activate it without Routemark.
+
+**JavaScript** (through `wp.hooks`)
+
+| Hook | Type | Gets | Return / do |
+| --- | --- | --- | --- |
+| `routemark.panels` | filter | list | Add `{ id, label, render( { routes, settings, openRoute } ) }` for a top bar button and a full-width view. |
+| `routemark.workspaceTabs` | filter | list | Add `{ id, label, render( { route, draft, path, url, sendAs, result } ) }` for a tab next to Params, Docs and the rest. |
+| `routemark.responseActions` | filter | list | Add `{ id, label, onClick( context ) }` for a button in the response toolbar. |
+| `routemark.snippetLanguages` | filter | list | Add `{ id, label, build( { path, url, draft } ) }` for a language in the Code tab. |
+| `routemark.reportFindings` | filter | findings, routes | Add findings to the Report. Give your own `kind` a `title` and `detail`. |
+| `routemark.requestSent` | action | `{ route, draft, path, url, sendAs, result }` | Runs after every request sent from the workspace. |
+
+```js
+wp.hooks.addFilter( 'routemark.workspaceTabs', 'my-addon', ( tabs ) => [
+	...tabs,
+	{
+		id: 'notes',
+		label: 'Notes',
+		render: ( { route } ) => wp.element.createElement( 'p', null, 'Notes for ' + route.route ),
+	},
+] );
+```
+
+`openRoute( route, { sendAs } )` in a panel opens a route in the workspace, optionally switched to someone (`{ id: 0 }` is logged out). `window.routemark.ui` has a few of Routemark's own components (`Icon`, `Method`, `PathText`, `JsonView`, `CopyButton`, `Toggle`) so an add-on's screens can match. Filters added after the page has rendered still show up.
+
+`ROUTEMARK_API_VERSION` (PHP) and `window.routemark.apiVersion` (JS) only go up when a change would break an add-on.
+
 ### Security
 
 The PHP only prints a few fixed strings, through `esc_html__()`, `esc_html_e()` and `esc_url()`. Data for the page goes in through `wp_add_inline_script()` as JSON with `JSON_HEX_TAG | JSON_HEX_AMP`. Everything else is rendered by React, with no `dangerouslySetInnerHTML`.
@@ -211,7 +264,7 @@ Run `phpcs` in the repo root to check against the WordPress Coding Standards (it
 ### Releasing
 
 1. Bump the version in `routemark.php` (header and `ROUTEMARK_VERSION`), `package.json` and `Stable tag` in `readme.txt`, and add a changelog entry to `readme.txt`.
-2. Commit, then `git tag v0.3.1 && git push --follow-tags`.
+2. Commit, then `git tag v0.3.2 && git push --follow-tags`.
 3. The release workflow checks the tag matches the version, builds the zip and attaches it to a GitHub release.
 
 Everything in `.wordpress-org/` goes in the `assets/` folder of the plugin's SVN repository on WordPress.org, not in the zip. That includes `blueprints/blueprint.json`, which gives the plugin page a Live Preview button: it opens Routemark in WordPress Playground, logged in, with an editor, an author and a subscriber to try Send as with.

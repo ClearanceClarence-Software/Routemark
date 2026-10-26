@@ -30,6 +30,15 @@ final class Plugin {
 	public static function instance(): Plugin {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
+
+			/**
+			 * Routemark is loaded. Add-ons should hook in here rather than on
+			 * plugins_loaded, so they know Routemark is active and can check
+			 * ROUTEMARK_API_VERSION first.
+			 *
+			 * @param Plugin $plugin The plugin.
+			 */
+			do_action( 'routemark_loaded', self::$instance );
 		}
 		return self::$instance;
 	}

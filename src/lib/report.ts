@@ -4,7 +4,8 @@ import type { RouteInfo } from '../types';
 import { routeToTemplate, sourceLabel, templateParams } from './routes';
 
 export type Severity = 'high' | 'medium' | 'low';
-export type FindingKind = 'no-permission' | 'open-write' | 'unchecked-args' | 'no-schema';
+// Add-ons can add findings of their own kind, with title and detail set.
+export type FindingKind = 'no-permission' | 'open-write' | 'unchecked-args' | 'no-schema' | ( string & {} );
 
 export interface Finding {
 	id: string;
@@ -14,6 +15,9 @@ export interface Finding {
 	// empty for route-level findings (no schema)
 	methods: string[];
 	args: string[];
+	// Only on findings from add-ons, which have kinds we don't know.
+	title?: string;
+	detail?: string;
 }
 
 export const SEVERITIES: Severity[] = [ 'high', 'medium', 'low' ];
@@ -84,6 +88,9 @@ export function severityLabel( s: Severity ): string {
 }
 
 export function findingTitle( f: Finding ): string {
+	if ( f.title ) {
+		return f.title;
+	}
 	switch ( f.kind ) {
 		case 'no-permission':
 			return __( 'No permission check', 'routemark' );
@@ -93,10 +100,15 @@ export function findingTitle( f: Finding ): string {
 			return _n( 'Unchecked argument', 'Unchecked arguments', f.args.length, 'routemark' );
 		case 'no-schema':
 			return __( 'No schema', 'routemark' );
+		default:
+			return f.kind;
 	}
 }
 
 export function findingDetail( f: Finding ): string {
+	if ( f.detail ) {
+		return f.detail;
+	}
 	switch ( f.kind ) {
 		case 'no-permission':
 			return __(
@@ -116,6 +128,8 @@ export function findingDetail( f: Finding ): string {
 			);
 		case 'no-schema':
 			return __( "There's no schema, so the response isn't documented and WordPress can't filter it by context or _fields.", 'routemark' );
+		default:
+			return '';
 	}
 }
 

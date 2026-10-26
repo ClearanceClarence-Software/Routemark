@@ -2,6 +2,7 @@ import { createInterpolateElement, useMemo, useState } from '@wordpress/element'
 import { __, _n, sprintf } from '@wordpress/i18n';
 
 import { buildReport, findingDetail, findingTitle, groupFindings, reportAsText, SEVERITIES, severityLabel, type Severity } from '../lib/report';
+import { filterFindings, useExtensions } from '../lib/extensions';
 import { localPath } from '../lib/routes';
 import type { RouteInfo } from '../types';
 import { CopyButton, Icon, Method, PathText, Toggle } from './ui';
@@ -15,7 +16,9 @@ export default function ReportView( { routes, onOpen }: Props ) {
 	const [ includeCore, setIncludeCore ] = useState( false );
 	const [ only, setOnly ] = useState< Severity | null >( null );
 
-	const all = useMemo( () => buildReport( routes ), [ routes ] );
+	const extensions = useExtensions();
+	// eslint-disable-next-line react-hooks/exhaustive-deps
+	const all = useMemo( () => filterFindings( buildReport( routes ), routes ), [ routes, extensions ] );
 	const scoped = useMemo( () => ( includeCore ? all : all.filter( ( f ) => f.route.source?.type !== 'core' ) ), [ all, includeCore ] );
 	const shown = useMemo( () => ( only ? scoped.filter( ( f ) => f.severity === only ) : scoped ), [ scoped, only ] );
 	const groups = useMemo( () => groupFindings( shown ), [ shown ] );

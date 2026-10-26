@@ -10,6 +10,7 @@ import { Icon, Mark } from './components/ui';
 import Workspace from './components/Workspace';
 import { useHashRoute, useStoredState } from './lib/hooks';
 import { filterRoutes, groupRoutes } from './lib/routes';
+import { ExtensionBoundary, ExtensionSlot, getPanels, useExtensions } from './lib/extensions';
 import { LOGGED_OUT } from './lib/request';
 import { initialSettings, saveSettings } from './lib/settings';
 import type { Draft, Filters, HistoryEntry, RoutesResponse, SendAsUser, Settings } from './types';
@@ -24,7 +25,10 @@ export default function App() {
 	const [ settings, setSettings ] = useState< Settings >( initialSettings );
 	const [ saveStatus, setSaveStatus ] = useState< SaveStatus >( 'idle' );
 	// Settings and the report take over the main area. null means the route view.
-	const [ panel, setPanel ] = useState< 'settings' | 'report' | null >( null );
+	// Built-in panels are 'settings' and 'report', add-on panels use their own id.
+	const [ panel, setPanel ] = useState< string | null >( null );
+	useExtensions();
+	const extPanels = getPanels();
 	const showSettings = panel === 'settings';
 	const [ history, setHistory ] = useStoredState< HistoryEntry[] >( `routemark.history.${ window.routemarkSettings?.userId ?? 0 }`, [] );
 	const [ filters, setFilters ] = useState< Filters >( { search: '', methods: [], publicOnly: false } );
@@ -166,6 +170,18 @@ export default function App() {
 					<Icon name="refresh" size={ 15 } />
 					<span className="rmk-hide-sm">{ __( 'Reload routes', 'routemark' ) }</span>
 				</button>
+				{ extPanels.map( ( p ) => (
+					<button
+						key={ p.id }
+						type="button"
+						className={ `rmk-btn rmk-btn--ghost rmk-ext-panel-btn${ panel === `ext:${ p.id }` ? ' is-active' : '' }` }
+						aria-pressed={ panel === `ext:${ p.id }` }
+						onClick={ () => setPanel( panel === `ext:${ p.id }` ? null : `ext:${ p.id }` ) }
+					>
+						<Icon name="puzzle" size={ 16 } />
+						<span className="rmk-hide-sm">{ p.label }</span>
+					</button>
+				) ) }
 				<button
 					type="button"
 					className={ `rmk-btn rmk-btn--ghost${ panel === 'report' ? ' is-active' : '' }` }
@@ -260,6 +276,30 @@ export default function App() {
 							} }
 						/>
 					) }
+
+					{ data &&
+						extPanels
+							.filter( ( p ) => panel === `ext:${ p.id }` )
+							.map( ( p ) => (
+								<div key={ p.id } className="rmk-overview rmk-ext-panel">
+									<ExtensionBoundary name={ p.label }>
+										<ExtensionSlot
+											render={ () =>
+												p.render( {
+													routes: data.routes,
+													settings,
+													openRoute: ( route, options ) => {
+														if ( options && 'sendAs' in options ) {
+															setSendAs( options.sendAs ?? null );
+														}
+														pick( route );
+													},
+												} )
+											}
+										/>
+									</ExtensionBoundary>
+								</div>
+							) ) }
 
 					{ data && ! panel && ! current && (
 						<Overview

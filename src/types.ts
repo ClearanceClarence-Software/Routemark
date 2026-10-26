@@ -159,5 +159,7 @@ declare global {
 			settings?: Settings;
 			sendAs?: { nonce: string; name: string };
 		};
+		// Set by index.tsx for add-ons. See src/lib/extensions.tsx.
+		routemark?: { version: string; apiVersion: number; ui: Record< string, unknown > };
 	}
 }

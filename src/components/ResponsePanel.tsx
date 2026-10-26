@@ -3,6 +3,7 @@ import { __, _n, sprintf } from '@wordpress/i18n';
 
 import { formatBytes } from '../lib/request';
 import type { RunResult, SendAsUser } from '../types';
+import { runAction, type RequestContext, type ResponseActionDef } from '../lib/extensions';
 import JsonView from './JsonView';
 import { sendAsLabel } from './SendAs';
 import { CopyButton, Icon, Tabs } from './ui';
@@ -30,11 +31,14 @@ function wpError( result: RunResult ): { code: string; message: string } | null 
 interface Props {
 	result: RunResult | null;
 	sentAs?: SendAsUser | null;
+	// Buttons from add-ons, and what they get when clicked.
+	actions?: ResponseActionDef[];
+	context?: RequestContext;
 	running: boolean;
 	jsonDepth?: number;
 }
 
-export default function ResponsePanel( { result, sentAs = null, running, jsonDepth = 2 }: Props ) {
+export default function ResponsePanel( { result, sentAs = null, running, jsonDepth = 2, actions = [], context }: Props ) {
 	const [ view, setView ] = useState< View >( 'pretty' );
 	const [ depth, setDepth ] = useState( { open: jsonDepth, rev: 0 } );
 
@@ -185,6 +189,17 @@ export default function ResponsePanel( { result, sentAs = null, running, jsonDep
 								</button>
 							</>
 						) }
+						{ context &&
+							actions.map( ( a ) => (
+								<button
+									key={ a.id }
+									type="button"
+									className="rmk-btn rmk-btn--ghost rmk-ext-action"
+									onClick={ () => runAction( a, { ...context, result } ) }
+								>
+									{ a.label }
+								</button>
+							) ) }
 						<CopyButton text={ view === 'headers' ? JSON.stringify( result.headers, null, 2 ) : pretty } />
 					</>
 				}

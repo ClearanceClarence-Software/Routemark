@@ -6,7 +6,8 @@
 		".",
 		"./tests/e2e/fixtures/plugins/demo-shop",
 		"./tests/e2e/fixtures/plugins/leaky-forms",
-		"./tests/e2e/fixtures/plugins/routemark-test-setup"
+		"./tests/e2e/fixtures/plugins/routemark-test-setup",
+		"./tests/e2e/fixtures/plugins/routemark-example-addon"
 	],
 	"mappings": {
 		"wp-content/mu-plugins/site-tweaks.php": "./tests/e2e/fixtures/mu-plugins/site-tweaks.php"

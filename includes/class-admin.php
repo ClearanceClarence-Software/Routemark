@@ -123,22 +123,35 @@ class Admin {
 		// wp-scripts also builds index-rtl.css, WordPress swaps it in for RTL languages.
 		wp_style_add_data( self::HANDLE, 'rtl', 'replace' );
 
+		$data = array(
+			'restRoot'   => esc_url_raw( rest_url() ),
+			'version'    => ROUTEMARK_VERSION,
+			'userId'     => get_current_user_id(),
+			// Inlined so the page opens with the right theme and options
+			// instead of flashing defaults while it fetches them.
+			'settings'   => Settings::for_user( get_current_user_id() ),
+			// Goes with X-Routemark-As, see class-send-as.php.
+			'sendAs'     => array(
+				'nonce' => wp_create_nonce( Send_As::NONCE_ACTION ),
+				'name'  => wp_get_current_user()->display_name,
+			),
+			'apiVersion' => ROUTEMARK_API_VERSION,
+		);
+
+		/**
+		 * Filters the data the app starts with (window.routemarkSettings).
+		 * Add-ons can put their own data under their own key. It goes into the
+		 * page as JSON, so don't add anything the current user shouldn't see.
+		 *
+		 * @param array $data Settings for the app.
+		 */
+		$filtered = apply_filters( 'routemark_app_data', $data );
+		$data     = is_array( $filtered ) ? $filtered : $data;
+
 		wp_add_inline_script(
 			self::HANDLE,
 			'window.routemarkSettings = ' . wp_json_encode(
-				array(
-					'restRoot' => esc_url_raw( rest_url() ),
-					'version'  => ROUTEMARK_VERSION,
-					'userId'   => get_current_user_id(),
-					// Inlined so the page opens with the right theme and options
-					// instead of flashing defaults while it fetches them.
-					'settings' => Settings::for_user( get_current_user_id() ),
-					// Goes with X-Routemark-As, see class-send-as.php.
-					'sendAs'   => array(
-						'nonce' => wp_create_nonce( Send_As::NONCE_ACTION ),
-						'name'  => wp_get_current_user()->display_name,
-					),
-				),
+				$data,
 				// This lands inside a <script> tag, so < > & are written as \u003C etc.
 				// Nothing in here can close the tag, whatever a value contains.
 				JSON_HEX_TAG | JSON_HEX_AMP
@@ -147,6 +160,15 @@ class Admin {
 		);
 
 		wp_set_script_translations( self::HANDLE, 'routemark' );
+
+		/**
+		 * Routemark's script and styles are enqueued. Add-ons enqueue theirs
+		 * here, with $handle as a dependency so they load after Routemark and
+		 * wp.hooks is there. Only fires on the Routemark page.
+		 *
+		 * @param string $handle Routemark's script and style handle.
+		 */
+		do_action( 'routemark_enqueue_assets', self::HANDLE );
 	}
 
 	/**

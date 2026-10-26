@@ -4,7 +4,7 @@ Tags: rest api, developer, debug, headless, json
 Requires at least: 6.6
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.3.0
+Stable tag: 0.3.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -98,6 +98,10 @@ It can't tell what a permission callback actually allows, only that there is one
 
 Check who you're sending as. Unless you picked someone under "Send as", you get the same answer your own account would get from any other client. Some endpoints need a specific capability, and some (like application passwords) need a different auth method entirely.
 
+= Can other plugins add to Routemark? =
+
+Yes. There are PHP hooks (routemark_loaded, routemark_app_data, routemark_enqueue_assets) and JavaScript filters through wp.hooks for adding panels, workspace tabs, response actions, code languages and Report findings. A broken add-on can't take Routemark down with it. The details and an example add-on are on GitHub.
+
 = Will there be a paid version? =
 
 Maybe. If it happens it'll be a separate add-on plugin. Nothing in this plugin is locked or limited.
@@ -131,6 +135,10 @@ Routemark bundles the Atkinson Hyperlegible Next and Atkinson Hyperlegible Mono 
 
 == Changelog ==
 
+= 0.3.1 =
+* For developers: other plugins can now add to Routemark. PHP hooks (routemark_loaded, routemark_app_data, routemark_enqueue_assets) and wp.hooks filters for panels, workspace tabs, response actions, code languages and Report findings, plus a routemark.requestSent action after each request. A broken add-on shows an error in its own spot and can't take Routemark down. Details and an example add-on are in the GitHub readme.
+* The app now starts once every script on the page has loaded, so add-ons are in place from the first render.
+
 = 0.3.0 =
 * New: "Send as". Send any request as logged out or as another user, so you can see what an editor, a subscriber or a visitor gets back from an endpoint. Pick one user per role or search by name, login or email. The response shows who it ran as, and history marks requests that weren't sent as you.
 * New: a Report (top right) that flags routes with no permission check, routes anyone can use to change data, arguments WordPress never checks, and routes with no schema. Grouped by plugin, worst first. Each finding opens the route, or opens it as logged out so you can try it straight away. "Copy as text" gives you the whole thing for a ticket or a client email.
@@ -144,6 +152,9 @@ Routemark bundles the Atkinson Hyperlegible Next and Atkinson Hyperlegible Mono 
 * First release on WordPress.org.
 
 == Upgrade Notice ==
+
+= 0.3.1 =
+Adds extension points for add-ons. Nothing changes if you don't use any.
 
 = 0.3.0 =
 Adds "Send as" for testing endpoints as other users, a Report of routes with weak permission checks, a Hooks tab, and query counts and timing for every request.

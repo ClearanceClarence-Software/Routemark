@@ -1,6 +1,6 @@
 {
   "name": "routemark",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Browse every REST API route on your site and send test requests to it from wp-admin.",
   "private": true,
   "license": "GPL-2.0-or-later",
@@ -46,6 +46,7 @@
     "@fontsource/bricolage-grotesque": "^5.3.0",
     "@wordpress/api-fetch": "^8.0.0",
     "@wordpress/element": "^10.0.0",
+    "@wordpress/hooks": "^4.57.0",
     "@wordpress/i18n": "^7.0.0",
     "@wordpress/url": "^5.0.0"
   }
