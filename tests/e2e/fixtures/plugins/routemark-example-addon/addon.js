@@ -88,9 +88,30 @@
 						title: 'Example finding',
 						detail: 'Added by the example add-on.',
 					},
-			  ]
+			  ].map( ( f ) => ( reviewed.has( f.id ) ? { ...f, note: 'Reviewed' } : f ) )
 			: findings;
 	} );
+
+	// A button on findings: here only on high ones. Marks them reviewed, then
+	// tells Routemark the findings filter now returns something different.
+	const reviewed = new Set();
+	addFilter( 'routemark.findingActions', ns, ( actions ) => [
+		...actions,
+		{
+			id: 'review',
+			label: 'Mark reviewed',
+			icon: 'check',
+			show: ( finding ) => finding.severity === 'high' && ! reviewed.has( finding.id ),
+			run: ( finding ) =>
+				new Promise( ( done ) =>
+					setTimeout( () => {
+						reviewed.add( finding.id );
+						wp.hooks.doAction( 'routemark.extensionsChanged' );
+						done();
+					}, 50 )
+				),
+		},
+	] );
 
 	// How the top bar shows the product: a badge after the wordmark, and a
 	// version after Routemark's.

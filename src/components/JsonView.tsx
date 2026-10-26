@@ -1,20 +1,75 @@
-import { useState } from '@wordpress/element';
+import { createContext, useContext, useState } from '@wordpress/element';
 import { __, _n, sprintf } from '@wordpress/i18n';
+import type { ReactNode } from 'react';
 
 const CHUNK = 100;
 
+interface ViewOptions {
+	/** Text to highlight, lowercase. Empty for none. */
+	term: string;
+	/** Opens a REST URL inside Routemark. Returns false if it isn't one. */
+	onLink?: ( url: string ) => boolean;
+	/** Is this string a REST URL on this site? Decides which strings become links. */
+	isLink?: ( url: string ) => boolean;
+}
+
+const Options = createContext< ViewOptions >( { term: '' } );
+
+function Mark( { text }: { text: string } ): ReactNode {
+	const { term } = useContext( Options );
+	if ( ! term ) {
+		return text;
+	}
+	const lower = text.toLowerCase();
+	const parts: ReactNode[] = [];
+	let from = 0;
+	let at = lower.indexOf( term );
+	while ( at !== -1 ) {
+		parts.push( text.slice( from, at ), <mark key={ at }>{ text.slice( at, at + term.length ) }</mark> );
+		from = at + term.length;
+		at = lower.indexOf( term, from );
+	}
+	parts.push( text.slice( from ) );
+	return <>{ parts }</>;
+}
+
 function Primitive( { value }: { value: unknown } ) {
+	const { onLink, isLink } = useContext( Options );
 	if ( value === null ) {
-		return <span className="rmk-j-null">null</span>;
+		return (
+			<span className="rmk-j-null">
+				<Mark text="null" />
+			</span>
+		);
 	}
 	if ( typeof value === 'string' ) {
-		return <span className="rmk-j-str">{ JSON.stringify( value ) }</span>;
+		const quoted = JSON.stringify( value );
+		if ( onLink && isLink?.( value ) ) {
+			return (
+				<button type="button" className="rmk-j-str rmk-j-link" onClick={ () => onLink( value ) } title={ __( 'Open in Routemark', 'routemark' ) }>
+					<Mark text={ quoted } />
+				</button>
+			);
+		}
+		return (
+			<span className="rmk-j-str">
+				<Mark text={ quoted } />
+			</span>
+		);
 	}
 	if ( typeof value === 'number' ) {
-		return <span className="rmk-j-num">{ String( value ) }</span>;
+		return (
+			<span className="rmk-j-num">
+				<Mark text={ String( value ) } />
+			</span>
+		);
 	}
 	if ( typeof value === 'boolean' ) {
-		return <span className="rmk-j-bool">{ String( value ) }</span>;
+		return (
+			<span className="rmk-j-bool">
+				<Mark text={ String( value ) } />
+			</span>
+		);
 	}
 	return <span>{ String( value ) }</span>;
 }
@@ -33,7 +88,9 @@ function Key( { name }: { name?: string } ) {
 	}
 	return (
 		<>
-			<span className="rmk-j-key">{ JSON.stringify( name ) }</span>
+			<span className="rmk-j-key">
+				<Mark text={ JSON.stringify( name ) } />
+			</span>
 			<span className="rmk-j-punct">: </span>
 		</>
 	);
@@ -106,14 +163,7 @@ function Node( { name, value, depth, openDepth, last }: NodeProps ) {
 				<>
 					<div className="rmk-j-children">
 						{ entries.slice( 0, limit ).map( ( [ k, v ], i ) => (
-							<Node
-								key={ k ?? i }
-								name={ k }
-								value={ v }
-								depth={ depth + 1 }
-								openDepth={ openDepth }
-								last={ i === entries.length - 1 }
-							/>
+							<Node key={ k ?? i } name={ k } value={ v } depth={ depth + 1 } openDepth={ openDepth } last={ i === entries.length - 1 } />
 						) ) }
 						{ entries.length > limit && (
 							<button type="button" className="rmk-j-more" onClick={ () => setLimit( limit + CHUNK ) }>
@@ -137,11 +187,65 @@ function Node( { name, value, depth, openDepth, last }: NodeProps ) {
 	);
 }
 
+const MISSING = Symbol( 'missing' );
+
+/**
+ * Only the parts of a value that match a search: keys or values containing
+ * the term, with their parents so they keep their place. A matching key
+ * keeps everything under it. Arrays keep their matching items.
+ */
+export function pruneJson( value: unknown, term: string ): { value: unknown; matches: number } {
+	let matches = 0;
+	const hit = ( text: string ) => text.toLowerCase().includes( term );
+
+	const walk = ( v: unknown ): unknown => {
+		if ( v !== null && typeof v === 'object' ) {
+			if ( Array.isArray( v ) ) {
+				const kept = v.map( walk ).filter( ( x ) => x !== MISSING );
+				return kept.length ? kept : MISSING;
+			}
+			const out: Record< string, unknown > = {};
+			for ( const [ k, child ] of Object.entries( v as Record< string, unknown > ) ) {
+				if ( hit( k ) ) {
+					matches++;
+					out[ k ] = child;
+					continue;
+				}
+				const kept = walk( child );
+				if ( kept !== MISSING ) {
+					out[ k ] = kept;
+				}
+			}
+			return Object.keys( out ).length ? out : MISSING;
+		}
+		if ( hit( v === null ? 'null' : String( v ) ) ) {
+			matches++;
+			return v;
+		}
+		return MISSING;
+	};
+
+	const result = walk( value );
+	return { value: result === MISSING ? undefined : result, matches };
+}
+
+interface Props {
+	value: unknown;
+	openDepth?: number;
+	revision?: number;
+	/** Highlight this text (case-insensitive). */
+	highlight?: string;
+	onLink?: ( url: string ) => boolean;
+	isLink?: ( url: string ) => boolean;
+}
+
 // Bump `revision` to make the tree re-apply openDepth (expand/collapse all).
-export default function JsonView( { value, openDepth = 2, revision = 0 }: { value: unknown; openDepth?: number; revision?: number } ) {
+export default function JsonView( { value, openDepth = 2, revision = 0, highlight = '', onLink, isLink }: Props ) {
 	return (
-		<div className="rmk-json" key={ revision }>
-			<Node value={ value } depth={ 0 } openDepth={ openDepth } last />
-		</div>
+		<Options.Provider value={ { term: highlight.trim().toLowerCase(), onLink, isLink } }>
+			<div className="rmk-json" key={ revision }>
+				<Node value={ value } depth={ 0 } openDepth={ openDepth } last />
+			</div>
+		</Options.Provider>
 	);
 }

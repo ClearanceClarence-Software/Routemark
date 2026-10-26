@@ -1,6 +1,6 @@
 {
   "name": "routemark",
-  "version": "0.3.3",
+  "version": "0.4.0",
   "description": "Browse every REST API route on your site and send test requests to it from wp-admin.",
   "private": true,
   "license": "GPL-2.0-or-later",
@@ -20,8 +20,8 @@
     "readme.txt"
   ],
   "scripts": {
-    "build": "wp-scripts build src/index.tsx",
-    "start": "wp-scripts start src/index.tsx",
+    "build": "wp-scripts build index=./src/index.tsx recorder=./src/recorder.ts",
+    "start": "wp-scripts start index=./src/index.tsx recorder=./src/recorder.ts",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tests/e2e",
     "lint:js": "wp-scripts lint-js src",
     "zip": "npm run build && node scripts/zip.mjs",

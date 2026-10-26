@@ -139,3 +139,17 @@ test( 'the launch offer: code, a checkout link with the coupon, gone after the e
 	await expect( page.locator( '.rmk-pro-card' ) ).toBeVisible();
 	await expect( page.locator( '.rmk-pro-offer' ) ).toHaveCount( 0 );
 } );
+
+test( 'a narrow top bar folds its labels into icons, and unfolds when there is room', async ( { page } ) => {
+	await page.setViewportSize( { width: 1000, height: 800 } );
+	await openRoutemark( page );
+	const bar = page.locator( '.rmk-topbar' );
+	await expect( bar ).toHaveClass( /is-compact/ );
+	// The buttons keep their names.
+	await expect( page.getByRole( 'button', { name: 'Report', exact: true } ) ).toBeVisible();
+	expect( await bar.evaluate( ( el ) => el.scrollWidth <= el.clientWidth + 1 ) ).toBe( true );
+
+	await page.setViewportSize( { width: 1900, height: 800 } );
+	await expect( bar ).not.toHaveClass( /is-compact/ );
+	await expect( page.locator( '.rmk-topbar .rmk-hide-sm', { hasText: 'Report' } ) ).toBeVisible();
+} );

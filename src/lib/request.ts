@@ -36,7 +36,7 @@ export function newDraft( route: RouteInfo, method?: HttpMethod, suggest = true 
 		pathParams,
 		query: suggest ? suggestedQuery( route, m ) : [],
 		headers: [],
-		body: hasBody( m ) ? sampleBody( route, m ) : '',
+		body: hasBody( m ) ? sampleBody( route, m, true ) : '',
 	};
 }
 
@@ -50,7 +50,7 @@ export function switchMethod( route: RouteInfo, draft: Draft, method: HttpMethod
 		...draft,
 		method,
 		query: [ ...typed, ...suggestions ],
-		body: hasBody( method ) && draft.body.trim() === '' ? sampleBody( route, method ) : draft.body,
+		body: hasBody( method ) && draft.body.trim() === '' ? sampleBody( route, method, true ) : draft.body,
 	};
 }
 
@@ -109,18 +109,19 @@ function sampleValue( arg: RouteArg ): unknown {
 	}
 }
 
-// Rough body skeleton from the args, required ones first.
-export function sampleBody( route: RouteInfo, method: HttpMethod ): string {
+// Rough body skeleton from the args, required ones first. A new request starts
+// with only the required ones; "Insert example" fills in all of them.
+export function sampleBody( route: RouteInfo, method: HttpMethod, requiredOnly = false ): string {
 	const params = new Set( templateParams( routeToTemplate( route.route ) ) );
 	const args = endpointFor( route, method )?.args ?? {};
 	const body: Record< string, unknown > = {};
 
 	Object.entries( args )
-		.filter( ( [ name ] ) => ! params.has( name ) && name !== 'context' && name !== '_locale' )
+		.filter( ( [ name, arg ] ) => ! params.has( name ) && name !== 'context' && name !== '_locale' && ( ! requiredOnly || !! arg.required ) )
 		.sort( ( [ , a ], [ , b ] ) => Number( !! b.required ) - Number( !! a.required ) )
 		.forEach( ( [ name, arg ] ) => ( body[ name ] = sampleValue( arg ) ) );
 
-	return Object.keys( body ).length ? JSON.stringify( body, null, 2 ) : '{\n  \n}';
+	return Object.keys( body ).length ? JSON.stringify( body, null, 2 ) : requiredOnly ? '' : '{\n  \n}';
 }
 
 export function jsonError( text: string ): string | null {

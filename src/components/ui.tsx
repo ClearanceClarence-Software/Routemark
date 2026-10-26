@@ -35,6 +35,17 @@ const PATHS = {
 	download: 'M12 4v11M7 10l5 5 5-5M5 20h14',
 	shield: 'M12 3 5 6v5c0 4.5 3 8.3 7 10 4-1.7 7-5.5 7-10V6l-7-3Z',
 	user: 'M12 4a4 4 0 1 0 0 8 4 4 0 0 0 0-8ZM4 21a8 8 0 0 1 16 0',
+	record: 'M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6ZM12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18Z',
+	link: 'M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1',
+	table: 'M4 5h16v14H4zM4 10h16M4 15h16M10 5v14',
+	braces: 'M8 4c-2 0-2 1.5-2 3v2c0 1.5-1 3-2 3 1 0 2 1.5 2 3v2c0 1.5 0 3 2 3M16 4c2 0 2 1.5 2 3v2c0 1.5 1 3 2 3-1 0-2 1.5-2 3v2c0 1.5 0 3-2 3',
+	form: 'M4 5h16M4 10h10M4 15h16M4 20h8',
+	columns: 'M4 4h7v16H4zM13 4h7v16h-7z',
+	import: 'M12 3v12M7 10l5 5 5-5M4 15v5h16v-5',
+	arrowLeft: 'M19 12H5M11 6l-6 6 6 6',
+	arrowRight: 'M5 12h14M13 6l6 6-6 6',
+	help: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18ZM9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.7M12 17h.01',
+	field: 'M4 7h4M4 12h4M4 17h4M11 7h9M11 12h9M11 17h9',
 } as const;
 
 export type IconName = keyof typeof PATHS;

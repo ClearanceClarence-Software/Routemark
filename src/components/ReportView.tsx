@@ -2,10 +2,10 @@ import { createInterpolateElement, useMemo, useState } from '@wordpress/element'
 import { __, _n, sprintf } from '@wordpress/i18n';
 
 import { buildReport, findingDetail, findingTitle, groupFindings, reportAsText, SEVERITIES, severityLabel, type Severity } from '../lib/report';
-import { filterFindings, useExtensions } from '../lib/extensions';
+import { actionsFor, filterFindings, runFindingAction, useExtensions } from '../lib/extensions';
 import { localPath } from '../lib/routes';
 import type { RouteInfo } from '../types';
-import { CopyButton, Icon, Method, PathText, Toggle } from './ui';
+import { CopyButton, Icon, isIconName, Method, PathText, Toggle } from './ui';
 
 interface Props {
 	routes: RouteInfo[];
@@ -15,6 +15,8 @@ interface Props {
 export default function ReportView( { routes, onOpen }: Props ) {
 	const [ includeCore, setIncludeCore ] = useState( false );
 	const [ only, setOnly ] = useState< Severity | null >( null );
+	// Add-on buttons that are running, by finding and button id.
+	const [ busy, setBusy ] = useState< string | null >( null );
 
 	const extensions = useExtensions();
 	// eslint-disable-next-line react-hooks/exhaustive-deps
@@ -98,6 +100,11 @@ export default function ReportView( { routes, onOpen }: Props ) {
 									</p>
 									<p className="rmk-finding-title">{ findingTitle( f ) }</p>
 									<p className="rmk-finding-detail">{ findingDetail( f ) }</p>
+									{ f.note && (
+										<p className="rmk-finding-note">
+											<Icon name="check" size={ 13 } /> { f.note }
+										</p>
+									) }
 								</div>
 								<div className="rmk-finding-actions">
 									<button type="button" className="rmk-btn rmk-btn--ghost" onClick={ () => onOpen( f.route.route, false ) }>
@@ -108,6 +115,21 @@ export default function ReportView( { routes, onOpen }: Props ) {
 											<Icon name="globe" size={ 14 } /> { __( 'Open as logged out', 'routemark' ) }
 										</button>
 									) }
+									{ actionsFor( f ).map( ( a ) => (
+										<button
+											key={ a.id }
+											type="button"
+											className="rmk-btn rmk-btn--ghost rmk-ext-action"
+											disabled={ busy === `${ f.id }:${ a.id }` }
+											onClick={ () => {
+												setBusy( `${ f.id }:${ a.id }` );
+												runFindingAction( a, f ).finally( () => setBusy( null ) );
+											} }
+										>
+											{ busy === `${ f.id }:${ a.id }` ? <span className="rmk-spinner" /> : isIconName( a.icon ) && <Icon name={ a.icon } size={ 14 } /> }{ ' ' }
+											{ a.label }
+										</button>
+									) ) }
 								</div>
 							</li>
 						) ) }

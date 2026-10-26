@@ -87,6 +87,18 @@ export interface SnippetDef {
 	build: ( ctx: { path: string; url: string; draft: Draft } ) => string;
 }
 
+/**
+ * A button on each finding in the Report, after Open and Open as logged out.
+ * show() decides which findings get it; leave it out for all of them.
+ */
+export interface FindingActionDef {
+	id: string;
+	label: string;
+	icon?: string;
+	show?: ( finding: Finding ) => boolean;
+	run: ( finding: Finding ) => void | Promise< unknown >;
+}
+
 /** Fired after every request sent from the workspace. */
 export interface RequestSentEvent extends RequestContext {
 	result: RunResult;
@@ -137,6 +149,19 @@ export function getBrand(): { edition: string; version: string } {
 }
 export const getWorkspaceTabs = () => list< WorkspaceTabDef >( 'routemark.workspaceTabs', [] );
 export const getResponseActions = () => list< ResponseActionDef >( 'routemark.responseActions', [] );
+export const getFindingActions = () => list< FindingActionDef >( 'routemark.findingActions', [] );
+
+/** Finding actions that apply to this finding. A show() that throws hides the button. */
+export function actionsFor( finding: Finding ): FindingActionDef[] {
+	return getFindingActions().filter( ( a ) => ! a.show || safely( `the "${ a.label }" button`, false, () => !! a.show!( finding ) ) );
+}
+
+export function runFindingAction( action: FindingActionDef, finding: Finding ): Promise< unknown > {
+	return Promise.resolve( safely( `the "${ action.label }" button`, undefined, () => action.run( finding ) ) ).catch( ( e ) => {
+		// eslint-disable-next-line no-console
+		console.error( `Routemark: the "${ action.label }" button failed`, e );
+	} );
+}
 export const getSnippets = () => list< SnippetDef >( 'routemark.snippetLanguages', [] );
 
 /** Add-ons can add their own findings to the Report (give them a title and detail). */
@@ -161,25 +186,34 @@ export function buildExtraSnippet( def: SnippetDef, ctx: { path: string; url: st
 
 /**
  * Re-renders when an add-on adds or removes a routemark.* filter after the
- * app has started, so a script that loads late still shows up.
+ * app has started, so a script that loads late still shows up. An add-on
+ * whose filters now return something different (it saved a setting, say)
+ * calls wp.hooks.doAction( 'routemark.extensionsChanged' ) for the same.
  */
 export function useExtensions(): number {
 	const [ revision, setRevision ] = useState( 0 );
 	useEffect( () => {
+		// Each component that uses this needs its own namespace, or removing
+		// one listener would remove them all.
+		const ns = `routemark/extensions/${ ++listeners }`;
 		const bump = ( hookName: string ) => {
 			if ( hookName.startsWith( 'routemark.' ) ) {
 				setRevision( ( r ) => r + 1 );
 			}
 		};
-		addAction( 'hookAdded', 'routemark/extensions', bump );
-		addAction( 'hookRemoved', 'routemark/extensions', bump );
+		addAction( 'hookAdded', ns, bump );
+		addAction( 'hookRemoved', ns, bump );
+		addAction( 'routemark.extensionsChanged', ns, () => setRevision( ( r ) => r + 1 ) );
 		return () => {
-			removeAction( 'hookAdded', 'routemark/extensions' );
-			removeAction( 'hookRemoved', 'routemark/extensions' );
+			removeAction( 'hookAdded', ns );
+			removeAction( 'hookRemoved', ns );
+			removeAction( 'routemark.extensionsChanged', ns );
 		};
 	}, [] );
 	return revision;
 }
+
+let listeners = 0;
 
 /**
  * Runs an add-on's render function inside the component tree, so the

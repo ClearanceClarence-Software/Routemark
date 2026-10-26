@@ -135,6 +135,22 @@ export default function SettingsView( { settings, routes, historyCount, status, 
 			</section>
 
 			<section className="rmk-overview-section">
+				<h3 className="rmk-section-title">{ __( 'Recording', 'routemark' ) }</h3>
+				<div className="rmk-settings-card">
+					<Row
+						label={ __( 'Show "REST calls" in the admin bar', 'routemark' ) }
+						help={ __( 'Start and stop recording from any admin screen. Recording still works from the Recorded tab without it.', 'routemark' ) }
+					>
+						<Toggle
+							checked={ settings.recorderInBar }
+							onChange={ ( recorderInBar ) => onChange( { recorderInBar } ) }
+							label={ __( 'Show "REST calls" in the admin bar', 'routemark' ) }
+						/>
+					</Row>
+				</div>
+			</section>
+
+			<section className="rmk-overview-section">
 				<h3 className="rmk-section-title">{ __( 'Sending', 'routemark' ) }</h3>
 				<div className="rmk-settings-card">
 					<Row

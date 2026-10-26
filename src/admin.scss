@@ -715,6 +715,7 @@
 }
 
 .rmk .rmk-brand {
+	flex: none;
 	display: flex;
 	align-items: center;
 	gap: 10px;
@@ -751,9 +752,23 @@
 }
 
 .rmk-brand-version {
+	white-space: nowrap;
 	font-family: var(--rmk-mono);
 	font-size: 12px;
 	color: var(--rmk-text-3);
+}
+
+.rmk-topbar.is-compact {
+	gap: 6px;
+}
+
+.rmk-topbar.is-compact .rmk-hide-sm,
+.rmk-topbar.is-compact .rmk-topbar-root {
+	display: none;
+}
+
+.rmk-topbar > .rmk-btn {
+	flex: none;
 }
 
 .rmk-topbar-root {
@@ -794,7 +809,7 @@
 .rmk-sidebar-switch {
 	flex: none;
 	display: grid;
-	grid-template-columns: 1fr 1fr;
+	grid-template-columns: repeat(3, 1fr);
 	gap: 4px;
 	margin: 14px 14px 0;
 	padding: 4px;
@@ -806,11 +821,13 @@
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		gap: 7px;
+		gap: 6px;
 		height: 32px;
-		font-size: 14px;
+		padding: 0 4px;
+		font-size: 13.5px;
 		font-weight: 600;
 		color: var(--rmk-text-3);
+		white-space: nowrap;
 		border-radius: 6px;
 
 		&:hover {
@@ -1479,7 +1496,8 @@
 	color: var(--rmk-text-3);
 }
 
-.rmk .rmk-sendas-toggle {
+.rmk .rmk-sendas-toggle,
+.rmk .rmk-sendas-toggle--inline {
 	display: inline-flex;
 	align-items: center;
 	gap: 7px;
@@ -1528,6 +1546,35 @@
 
 .rmk-sendas-reset {
 	margin-left: auto;
+}
+
+// Compact version, e.g. "Compare with" in the response toolbar.
+.rmk .rmk-sendas--inline {
+	display: inline-flex;
+	flex: none;
+	padding: 0;
+	font-size: 13px;
+	border: 0;
+
+	.rmk-sendas-toggle--inline {
+		white-space: nowrap;
+		min-height: 30px;
+		padding: 3px 9px;
+		font-weight: 500;
+		background: none;
+		border-color: transparent;
+
+		&:hover {
+			background: var(--rmk-hover);
+		}
+	}
+
+	.rmk-sendas-menu {
+		top: calc(100% + 4px);
+		right: 0;
+		left: auto;
+		width: 320px;
+	}
 }
 
 .rmk-sendas-menu {
@@ -2128,6 +2175,19 @@
 
 .rmk-response .rmk-tabs {
 	flex: none;
+	flex-wrap: wrap;
+	column-gap: 8px;
+	row-gap: 0;
+
+	// Keep every tab whole; the buttons on the right move to their own row instead.
+	.rmk-tabs-list {
+		flex: none;
+	}
+
+	.rmk-tabs-trailing {
+		flex-wrap: wrap;
+		justify-content: flex-end;
+	}
 }
 
 .rmk-response-body {
@@ -2172,6 +2232,17 @@
 		border: 1px solid soft(--rmk-err, 25%);
 
 		p {
+			color: var(--rmk-text);
+		}
+	}
+
+	&--info {
+		color: var(--rmk-info);
+		background: soft(--rmk-info, 8%);
+		border: 1px solid soft(--rmk-info, 22%);
+
+		p {
+			margin: 0;
 			color: var(--rmk-text);
 		}
 	}
@@ -2842,4 +2913,578 @@
 	.rmk .rmk-pro-card-note {
 		max-width: none;
 	}
+}
+
+
+// 0.4.0 -------------------------------------------------------------------
+
+// A note above the workspace (what an import left out, where a recorded call came from).
+.rmk .rmk-main-note {
+	align-items: center;
+	margin: 12px 16px 0;
+
+	> div {
+		flex: 1;
+	}
+}
+
+// Recorded calls, in the sidebar
+
+.rmk-sidebar-switch .is-recording .rmk-icon {
+	color: var(--rmk-err);
+}
+
+.rmk-recorder-bar {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin: 12px 0 8px;
+	padding: 8px 10px;
+	background: var(--rmk-sunken);
+	border: 1px solid var(--rmk-line);
+	border-radius: 8px;
+
+	&.is-on {
+		background: soft(--rmk-err, 7%);
+		border-color: soft(--rmk-err, 30%);
+	}
+}
+
+.rmk-recorder-dot {
+	width: 9px;
+	height: 9px;
+	background: var(--rmk-line-strong);
+	border-radius: 50%;
+
+	.is-on & {
+		background: var(--rmk-err);
+		box-shadow: 0 0 0 3px soft(--rmk-err, 25%);
+		animation: rmk-recording 1.6s ease-in-out infinite;
+	}
+}
+
+@keyframes rmk-recording {
+	50% {
+		opacity: 0.35;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.rmk-recorder-dot {
+		animation: none !important;
+	}
+}
+
+.rmk-recorder-state {
+	font-size: 14px;
+	font-weight: 600;
+}
+
+.rmk .rmk-recorded-help {
+	margin: 0 0 10px;
+	font-size: 13px;
+	line-height: 1.5;
+}
+
+.rmk .rmk-recorded-filter {
+	margin-bottom: 8px;
+}
+
+.rmk .rmk-recorded-item:disabled {
+	cursor: not-allowed;
+	opacity: 0.55;
+}
+
+// Search by field
+
+.rmk-chip--fields {
+	--m: var(--rmk-type);
+}
+
+.rmk-route-fields {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+	margin-top: 3px;
+
+	code {
+		padding: 0 5px;
+		font-size: 12px;
+		color: var(--rmk-type);
+		background: soft(--rmk-type, 10%);
+		border-radius: 4px;
+	}
+}
+
+.rmk-route-path:has(.rmk-route-fields) {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+}
+
+// Dialog (cURL import)
+
+.rmk-modal-backdrop {
+	position: fixed;
+	inset: 0;
+	z-index: 100000;
+	// Add-ons render dialogs outside the app with class="rmk rmk-modal-backdrop"
+	// to get the colors. These undo the app's own size.
+	height: auto;
+	min-height: 0;
+	display: grid;
+	place-items: center;
+	padding: 16px;
+	background: rgba(15, 23, 42, 0.5);
+}
+
+.rmk-modal {
+	display: flex;
+	flex-direction: column;
+	width: min(640px, 100%);
+	max-height: calc(100vh - 32px);
+	overflow: hidden;
+	color: var(--rmk-text);
+	background: var(--rmk-panel);
+	border: 1px solid var(--rmk-line);
+	border-radius: 12px;
+	box-shadow: 0 24px 60px rgba(0, 0, 0, 0.3);
+}
+
+.rmk-modal-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 14px 16px 10px 20px;
+
+	h2 {
+		margin: 0;
+		font-size: 17px;
+		color: var(--rmk-text);
+	}
+}
+
+.rmk-modal-body {
+	padding: 0 20px 4px;
+	overflow-y: auto;
+
+	> p {
+		margin: 0 0 12px;
+		font-size: 14px;
+		line-height: 1.5;
+	}
+
+	.rmk-hint {
+		margin: 10px 0 0;
+	}
+}
+
+.rmk .rmk-import-text {
+	width: 100%;
+	min-height: 150px;
+	font-size: 13px;
+	line-height: 1.5;
+	resize: vertical;
+}
+
+.rmk-modal-foot {
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
+	padding: 14px 20px;
+	border-top: 1px solid var(--rmk-line);
+}
+
+// Response: search, paging, links, table
+
+.rmk-response-search {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 10px 16px 0;
+	font-size: 13px;
+
+	.rmk-search {
+		flex: 1;
+		max-width: 360px;
+	}
+}
+
+.rmk .rmk-response-nomatch {
+	margin: 0;
+	font-size: 14px;
+}
+
+.rmk-json mark {
+	color: inherit;
+	background: soft(--rmk-warn, 30%);
+	border-radius: 2px;
+}
+
+.rmk .rmk-j-link {
+	padding: 0;
+	font: inherit;
+	color: var(--rmk-j-str);
+	text-align: inherit;
+	text-decoration: underline;
+	text-decoration-color: soft(--rmk-j-str, 45%);
+	text-underline-offset: 2px;
+	cursor: pointer;
+	background: none;
+	border: 0;
+
+	&:hover,
+	&:focus-visible {
+		text-decoration-color: currentColor;
+	}
+}
+
+.rmk-pager {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 8px 16px 0;
+}
+
+.rmk-pager-text {
+	font-size: 13.5px;
+	font-weight: 600;
+	color: var(--rmk-text-2);
+}
+
+.rmk-table-view {
+	.rmk-note {
+		margin: 10px 0 0;
+	}
+}
+
+.rmk-table-scroll {
+	overflow-x: auto;
+}
+
+.rmk-table--data {
+	font-family: var(--rmk-mono);
+	font-size: 13px;
+
+	th,
+	td {
+		padding: 7px 14px 7px 0;
+		white-space: nowrap;
+	}
+
+	td {
+		vertical-align: middle;
+		color: var(--rmk-text);
+	}
+
+	td.rmk-j-str {
+		color: var(--rmk-j-str);
+	}
+
+	td.rmk-j-num {
+		color: var(--rmk-j-num);
+	}
+
+	td.rmk-j-bool {
+		color: var(--rmk-j-bool);
+	}
+
+	td.rmk-j-null,
+	td.rmk-j-punct {
+		color: var(--rmk-text-3);
+	}
+
+	tbody tr:hover td {
+		background: var(--rmk-hover);
+	}
+
+	.rmk-table-open {
+		position: sticky;
+		right: 0;
+		padding-right: 4px;
+		text-align: right;
+		background: var(--rmk-panel);
+	}
+}
+
+// Why was this refused?
+
+.rmk-denied {
+	margin: 12px 16px 0;
+	padding: 12px 14px;
+	font-size: 14px;
+	background: var(--rmk-sunken);
+	border: 1px solid var(--rmk-line);
+	border-radius: 8px;
+
+	p {
+		margin: 0 0 8px;
+		line-height: 1.5;
+	}
+
+	> .rmk-btn {
+		margin-top: 4px;
+	}
+}
+
+.rmk .rmk-denied-title {
+	display: flex;
+	align-items: center;
+	gap: 7px;
+	margin: 0 0 8px;
+	font-size: 14px;
+	font-weight: 700;
+	color: var(--rmk-text);
+}
+
+.rmk-denied-facts {
+	display: grid;
+	grid-template-columns: max-content 1fr;
+	gap: 6px 14px;
+	margin: 0 0 8px;
+
+	dt {
+		color: var(--rmk-text-3);
+	}
+
+	dd {
+		margin: 0;
+		min-width: 0;
+		overflow-wrap: anywhere;
+	}
+
+	code {
+		font-size: 13px;
+	}
+}
+
+.rmk-denied-source {
+	margin-left: 8px;
+	padding: 1px 7px;
+	font-size: 12px;
+	font-weight: 600;
+	color: var(--rmk-accent-strong);
+	background: var(--rmk-accent-soft);
+	border-radius: 999px;
+}
+
+.rmk-denied-caps {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+
+	li {
+		display: inline-flex;
+		align-items: center;
+		gap: 5px;
+		margin: 0;
+		padding: 2px 8px;
+		border: 1px solid var(--rmk-line);
+		border-radius: 999px;
+	}
+
+	.has {
+		color: var(--rmk-ok);
+		border-color: soft(--rmk-ok, 35%);
+	}
+
+	.lacks {
+		color: var(--rmk-err);
+		border-color: soft(--rmk-err, 35%);
+	}
+
+	.unknown {
+		color: var(--rmk-text-2);
+	}
+
+	code {
+		color: inherit;
+		background: none;
+	}
+}
+
+.rmk-denied-early {
+	ul {
+		margin: 0 0 8px;
+		padding-left: 18px;
+		list-style: disc;
+	}
+
+	li {
+		margin: 2px 0;
+	}
+}
+
+// Compare two users
+
+.rmk-compare {
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+}
+
+.rmk-compare-grid {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	flex: 1;
+	min-height: 0;
+	overflow: auto;
+}
+
+.rmk-compare-side {
+	min-width: 0;
+	border-right: 1px solid var(--rmk-line);
+
+	&:last-child {
+		border-right: 0;
+	}
+}
+
+.rmk-compare-head {
+	position: sticky;
+	top: 0;
+	z-index: 1;
+	display: flex;
+	align-items: center;
+	gap: 7px;
+	padding: 8px 12px;
+	font-size: 14px;
+	background: var(--rmk-panel);
+	border-bottom: 1px solid var(--rmk-line);
+}
+
+.rmk .rmk-compare-pre {
+	margin: 0;
+	padding: 8px 0;
+	font-size: 12.5px;
+	line-height: 1.6;
+	background: none;
+	border: 0;
+	border-radius: 0;
+}
+
+.rmk-compare-line {
+	display: block;
+	padding: 0 12px;
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+
+	&.is-only-a {
+		background: soft(--rmk-err, 13%);
+	}
+
+	&.is-only-b {
+		background: soft(--rmk-ok, 13%);
+	}
+}
+
+// Body as a form
+
+.rmk-body-form {
+	display: grid;
+	gap: 14px;
+}
+
+.rmk .rmk-body-form-filter {
+	max-width: 320px;
+}
+
+.rmk-field {
+	display: grid;
+	gap: 5px;
+}
+
+.rmk .rmk-field .rmk-input,
+.rmk .rmk-field select.rmk-input {
+	width: 100%;
+	max-width: 520px;
+}
+
+.rmk-field {
+
+	textarea.rmk-input {
+		font-size: 13px;
+		resize: vertical;
+	}
+
+	&.has-error .rmk-input {
+		border-color: var(--rmk-err);
+	}
+}
+
+.rmk-field-label {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 14px;
+
+	code {
+		font-size: 13.5px;
+		font-weight: 600;
+		color: var(--rmk-text);
+		background: none;
+	}
+}
+
+.rmk-field-required {
+	font-weight: 700;
+	color: var(--rmk-req);
+}
+
+.rmk .rmk-field-clear {
+	margin-left: auto;
+	font-size: 12.5px;
+}
+
+.rmk .rmk-field-help {
+	max-width: 620px;
+	margin: 0;
+	font-size: 13px;
+	line-height: 1.45;
+	color: var(--rmk-text-3);
+}
+
+.rmk .rmk-field-error {
+	display: flex;
+	align-items: center;
+	gap: 5px;
+	margin: 0;
+	font-size: 13px;
+	color: var(--rmk-err);
+}
+
+.rmk-field-checks {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px 14px;
+}
+
+.rmk-field-check {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 13.5px;
+}
+
+.rmk .rmk-seg button:has(.rmk-icon) {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+}
+
+// A line an add-on put on a finding.
+.rmk .rmk-finding-note {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	margin: 6px 0 0;
+	padding: 2px 9px;
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--rmk-ok);
+	background: soft(--rmk-ok, 10%);
+	border-radius: 999px;
 }

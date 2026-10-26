@@ -152,7 +152,7 @@ class Routes_Controller {
 			$endpoints = array();
 			foreach ( $handlers as $handler ) {
 				$args       = (array) ( $handler['args'] ?? array() );
-				$permission = $this->permission_kind( $handler['permission_callback'] ?? null, $route, (string) ( $options['namespace'] ?? '' ) );
+				$permission = self::permission_kind( $handler['permission_callback'] ?? null, $route, (string) ( $options['namespace'] ?? '' ) );
 
 				$endpoints[] = array(
 					'methods'       => array_keys( array_filter( (array) ( $handler['methods'] ?? array() ) ) ),
@@ -281,7 +281,7 @@ class Routes_Controller {
 	 * @param string $route_namespace Route namespace.
 	 * @return string
 	 */
-	private function permission_kind( $callback, string $route, string $route_namespace ): string {
+	public static function permission_kind( $callback, string $route, string $route_namespace ): string {
 		if ( empty( $callback ) ) {
 			// WordPress registers these itself, without a permission callback.
 			// The index routes are public on purpose, and batch checks each

@@ -18,6 +18,8 @@ export interface Finding {
 	// Only on findings from add-ons, which have kinds we don't know.
 	title?: string;
 	detail?: string;
+	// A short line an add-on can put on any finding, e.g. "Login required by Routemark Pro".
+	note?: string;
 }
 
 export const SEVERITIES: Severity[] = [ 'high', 'medium', 'low' ];

@@ -21,9 +21,20 @@ export function sendAsLabel( as: SendAsUser | null ): string {
 interface Props {
 	value: SendAsUser | null;
 	onChange: ( as: SendAsUser | null ) => void;
+	/** Visible label. "Send as" by default. */
+	label?: string;
+	/** Prefix for element ids, so two pickers can share a page. */
+	id?: string;
+	/** The explanation and "Back to you" next to a switched user. */
+	showNote?: boolean;
+	/** Leave "You" out of the list (comparing against yourself makes no sense). */
+	hideYou?: boolean;
+	/** "bar": the full-width row under the address. "inline": a compact button, e.g. in a toolbar. */
+	variant?: 'bar' | 'inline';
 }
 
-export default function SendAs( { value, onChange }: Props ) {
+export default function SendAs( { value, onChange, label, id = 'rmk-sendas', showNote = true, hideYou = false, variant = 'bar' }: Props ) {
+	const inline = variant === 'inline';
 	const [ open, setOpen ] = useState( false );
 	const [ search, setSearch ] = useState( '' );
 	const [ users, setUsers ] = useState< SendAsUser[] | null >( null );
@@ -123,25 +134,25 @@ export default function SendAs( { value, onChange }: Props ) {
 	);
 
 	return (
-		<div className={ `rmk-sendas${ value ? ' is-switched' : '' }` } ref={ wrap } onKeyDown={ open ? onKeyDown : undefined }>
-			<span className="rmk-sendas-label" id="rmk-sendas-label">
-				{ __( 'Send as', 'routemark' ) }
+		<div className={ inline ? 'rmk-sendas rmk-sendas--inline' : `rmk-sendas${ value ? ' is-switched' : '' }` } ref={ wrap } onKeyDown={ open ? onKeyDown : undefined }>
+			<span className={ inline ? 'screen-reader-text' : 'rmk-sendas-label' } id={ `${ id }-label` }>
+				{ label ?? __( 'Send as', 'routemark' ) }
 			</span>
 			<button
 				type="button"
 				ref={ toggle }
-				className="rmk-sendas-toggle"
+				className={ inline ? 'rmk-sendas-toggle--inline' : 'rmk-sendas-toggle' }
 				aria-expanded={ open }
-				aria-labelledby="rmk-sendas-label rmk-sendas-current"
+				aria-labelledby={ `${ id }-label ${ id }-current` }
 				onClick={ () => setOpen( ! open ) }
 			>
-				<Icon name={ value?.id === 0 ? 'globe' : 'user' } size={ 14 } />
-				<span id="rmk-sendas-current">{ sendAsLabel( value ) }</span>
+				<Icon name={ inline ? 'columns' : value?.id === 0 ? 'globe' : 'user' } size={ 14 } />
+				<span id={ `${ id }-current` }>{ inline ? label : sendAsLabel( value ) }</span>
 				{ value && value.role && <span className="rmk-sendas-role">{ value.role }</span> }
 				<span className="rmk-sendas-caret" aria-hidden="true" />
 			</button>
 
-			{ value && (
+			{ value && showNote && (
 				<>
 					<span className="rmk-sendas-note">
 						{ value.id === 0
@@ -155,7 +166,7 @@ export default function SendAs( { value, onChange }: Props ) {
 			) }
 
 			{ open && (
-				<div className="rmk-sendas-menu" role="dialog" aria-label={ __( 'Send as', 'routemark' ) }>
+				<div className="rmk-sendas-menu" role="dialog" aria-label={ label ?? __( 'Send as', 'routemark' ) }>
 					<input
 						ref={ input }
 						type="search"
@@ -166,7 +177,7 @@ export default function SendAs( { value, onChange }: Props ) {
 						onChange={ ( e ) => setSearch( e.target.value ) }
 					/>
 					<ul className="rmk-sendas-list">
-						{ ! search && option( null, __( 'You', 'routemark' ), me, 'me' ) }
+						{ ! search && ! hideYou && option( null, __( 'You', 'routemark' ), me, 'me' ) }
 						{ ! search && option( LOGGED_OUT, __( 'Logged out', 'routemark' ), __( 'no cookie, like a visitor', 'routemark' ), 'anon' ) }
 						<li className="rmk-sendas-heading" aria-hidden="true">
 							{ search ? __( 'Matching users', 'routemark' ) : __( 'One user per role', 'routemark' ) }

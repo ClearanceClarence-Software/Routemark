@@ -1,19 +1,26 @@
 import apiFetch from '@wordpress/api-fetch';
 import { useCallback, useEffect, useMemo, useRef, useState } from '@wordpress/element';
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
 
+import ImportDialog from './components/ImportDialog';
 import Overview from './components/Overview';
+import { useRecorder } from './components/RecordedList';
 import ReportView from './components/ReportView';
 import SettingsView from './components/SettingsView';
-import Sidebar from './components/Sidebar';
+import Sidebar, { type SidebarView } from './components/Sidebar';
 import { Icon, isIconName, Mark } from './components/ui';
 import Workspace from './components/Workspace';
 import { useHashRoute, useStoredState } from './lib/hooks';
 import { filterRoutes, groupRoutes } from './lib/routes';
 import { ExtensionBoundary, ExtensionSlot, getBrand, getPanels, useExtensions } from './lib/extensions';
 import { LOGGED_OUT } from './lib/request';
+import { matchRoute, replay, type Replay } from './lib/replay';
 import { initialSettings, saveSettings } from './lib/settings';
 import type { Draft, Filters, HistoryEntry, RoutesResponse, SendAsUser, Settings } from './types';
+
+// tools.php?page=routemark&panel=report opens the Report, &panel=recorded the
+// Recorded list (the admin bar and Site Health link there).
+const START = new URLSearchParams( window.location.search ).get( 'panel' );
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
@@ -26,19 +33,26 @@ export default function App() {
 	const [ saveStatus, setSaveStatus ] = useState< SaveStatus >( 'idle' );
 	// Settings and the report take over the main area. null means the route view.
 	// Built-in panels are 'settings' and 'report', add-on panels use their own id.
-	const [ panel, setPanel ] = useState< string | null >( null );
+	const [ panel, setPanel ] = useState< string | null >( START === 'report' ? 'report' : null );
+	const [ sidebarView, setSidebarView ] = useState< SidebarView >( START === 'recorded' ? 'recorded' : 'routes' );
+	const [ recorder, setRecorder ] = useRecorder();
+	const [ importing, setImporting ] = useState( false );
+	// A one-line note above the workspace, e.g. what an import left out.
+	const [ note, setNote ] = useState< string | null >( null );
 	useExtensions();
 	const extPanels = getPanels();
 	const brand = getBrand();
 	const showSettings = panel === 'settings';
 	const [ history, setHistory ] = useStoredState< HistoryEntry[] >( `routemark.history.${ window.routemarkSettings?.userId ?? 0 }`, [] );
-	const [ filters, setFilters ] = useState< Filters >( { search: '', methods: [], publicOnly: false } );
+	const [ filters, setFilters ] = useState< Filters >( { search: '', methods: [], publicOnly: false, fields: false } );
 	const [ preset, setPreset ] = useState< { id: string; draft: Draft } | null >( null );
 	// Kept while you move between routes, but never saved: after a reload
 	// you're always back to sending as yourself.
 	const [ sendAs, setSendAs ] = useState< SendAsUser | null >( null );
 	const searchRef = useRef< HTMLInputElement >( null );
 	const saveTimer = useRef< number >( 0 );
+	const topbarRef = useRef< HTMLElement >( null );
+	const [ compact, setCompact ] = useState( false );
 	const theme = settings.theme;
 
 	// Apply right away, save in the background. If the save fails we put the
@@ -115,14 +129,60 @@ export default function App() {
 	}, [ data, settings.hiddenNamespaces ] );
 
 	const filtered = useMemo( () => filterRoutes( visible, filters ), [ visible, filters ] );
+
+	// Opens a request that came from somewhere else: a recorded call, a cURL command, a link.
+	const openReplay = useCallback(
+		( result: Replay, message: string | null = null ) => {
+			setPanel( null );
+			setSelected( result.route.route );
+			setPreset( { id: `${ Date.now() }`, draft: result.draft } );
+			setNote( message );
+		},
+		[ setSelected ]
+	);
 	const groups = useMemo( () => groupRoutes( filtered ), [ filtered ] );
 	const order = useMemo( () => groups.flatMap( ( g ) => g.routes.map( ( r ) => r.route ) ), [ groups ] );
 
 	const pick = ( route: string | null ) => {
 		setPanel( null );
 		setPreset( null );
+		setNote( null );
 		setSelected( route );
 	};
+
+	// A REST URL from a response (a _links href, say). False if it's not one of ours.
+	const openUrl = useCallback(
+		( url: string, method = 'GET' ): boolean => {
+			if ( ! data ) {
+				return false;
+			}
+			const root = window.routemarkSettings?.restRoot ?? '/wp-json/';
+			let path: string | null = null;
+			try {
+				const u = new URL( url, window.location.href );
+				const r = new URL( root, window.location.href );
+				if ( u.origin !== r.origin ) {
+					return false;
+				}
+				const routeParam = u.searchParams.get( 'rest_route' );
+				if ( routeParam !== null ) {
+					u.searchParams.delete( 'rest_route' );
+					path = routeParam + ( u.searchParams.toString() ? `?${ u.searchParams.toString() }` : '' );
+				} else if ( u.pathname.startsWith( r.pathname.replace( /\/?$/, '/' ) ) ) {
+					path = '/' + u.pathname.slice( r.pathname.replace( /\/?$/, '/' ).length ) + u.search;
+				}
+			} catch {
+				return false;
+			}
+			const result = path !== null ? replay( data.routes, { method, path } ) : null;
+			if ( ! result ) {
+				return false;
+			}
+			openReplay( result );
+			return true;
+		},
+		[ data, openReplay ]
+	);
 
 	const step = ( delta: number ) => {
 		if ( order.length === 0 ) {
@@ -142,12 +202,34 @@ export default function App() {
 		[ setHistory, settings.keepHistory, settings.historySize ]
 	);
 
+	// With add-on panels the labels can outgrow the bar. Then they fold into
+	// icons, and come back once the bar is wide enough to hold them again.
+	const fullWidth = useRef( 0 );
+	useEffect( () => {
+		const bar = topbarRef.current;
+		if ( ! bar || typeof ResizeObserver === 'undefined' ) {
+			return;
+		}
+		const check = () => {
+			if ( ! bar.classList.contains( 'is-compact' ) ) {
+				fullWidth.current = bar.scrollWidth;
+				setCompact( bar.scrollWidth > bar.clientWidth + 1 );
+			} else {
+				setCompact( fullWidth.current > bar.clientWidth + 1 );
+			}
+		};
+		const observer = new ResizeObserver( check );
+		observer.observe( bar );
+		check();
+		return () => observer.disconnect();
+	}, [ extPanels.length ] );
+
 	const current = data?.routes.find( ( r ) => r.route === selected ) ?? null;
 	const themeLabel = theme === 'light' ? __( 'Switch to dark theme', 'routemark' ) : __( 'Switch to light theme', 'routemark' );
 
 	return (
 		<div className="rmk" data-theme={ theme }>
-			<header className="rmk-topbar">
+			<header className={ `rmk-topbar${ compact ? ' is-compact' : '' }` } ref={ topbarRef }>
 				<button type="button" className="rmk-brand" onClick={ () => pick( null ) } title={ __( 'Overview', 'routemark' ) }>
 					<Mark size={ 28 } />
 					<span className="rmk-brand-name">
@@ -171,6 +253,7 @@ export default function App() {
 					className={ `rmk-btn rmk-btn--ghost${ loading ? ' is-spinning' : '' }` }
 					onClick={ load }
 					disabled={ loading }
+					title={ __( 'Reload routes', 'routemark' ) }
 				>
 					<Icon name="refresh" size={ 15 } />
 					<span className="rmk-hide-sm">{ __( 'Reload routes', 'routemark' ) }</span>
@@ -182,16 +265,22 @@ export default function App() {
 						className={ `rmk-btn rmk-btn--ghost rmk-ext-panel-btn${ panel === `ext:${ p.id }` ? ' is-active' : '' }` }
 						aria-pressed={ panel === `ext:${ p.id }` }
 						onClick={ () => setPanel( panel === `ext:${ p.id }` ? null : `ext:${ p.id }` ) }
+						title={ p.label }
 					>
 						<Icon name={ isIconName( p.icon ) ? p.icon : 'puzzle' } size={ 16 } />
 						<span className="rmk-hide-sm">{ p.label }</span>
 					</button>
 				) ) }
+				<button type="button" className="rmk-btn rmk-btn--ghost" onClick={ () => setImporting( true ) } disabled={ ! data } title={ __( 'Import a cURL command', 'routemark' ) }>
+					<Icon name="import" size={ 16 } />
+					<span className="rmk-hide-sm">{ __( 'Import', 'routemark' ) }</span>
+				</button>
 				<button
 					type="button"
 					className={ `rmk-btn rmk-btn--ghost${ panel === 'report' ? ' is-active' : '' }` }
 					aria-pressed={ panel === 'report' }
 					onClick={ () => setPanel( panel === 'report' ? null : 'report' ) }
+					title={ __( 'Report', 'routemark' ) }
 				>
 					<Icon name="shield" size={ 16 } />
 					<span className="rmk-hide-sm">{ __( 'Report', 'routemark' ) }</span>
@@ -210,6 +299,7 @@ export default function App() {
 					className={ `rmk-btn rmk-btn--ghost${ showSettings ? ' is-active' : '' }` }
 					aria-pressed={ showSettings }
 					onClick={ () => setPanel( showSettings ? null : 'settings' ) }
+					title={ __( 'Settings', 'routemark' ) }
 				>
 					<Icon name="sliders" size={ 16 } />
 					<span className="rmk-hide-sm">{ __( 'Settings', 'routemark' ) }</span>
@@ -234,6 +324,23 @@ export default function App() {
 					} }
 					onClearHistory={ () => setHistory( [] ) }
 					onStep={ step }
+					view={ sidebarView }
+					onView={ setSidebarView }
+					recorder={ {
+						state: recorder,
+						onChange: setRecorder,
+						canOpen: ( call ) => !! data && matchRoute( data.routes, call.path ) !== null,
+						onOpen: ( call ) => {
+							const result = data ? replay( data.routes, call ) : null;
+							if ( result ) {
+								openReplay(
+									result,
+									/* translators: 1: admin screen file, 2: time */
+									sprintf( __( 'Recorded on %1$s at %2$s. Check the request before you send it, it runs against this site.', 'routemark' ), call.page, new Date( call.at ).toLocaleTimeString() )
+								);
+							}
+						},
+					} }
 				/>
 
 				<main className="rmk-main">
@@ -318,10 +425,22 @@ export default function App() {
 								if ( settings.hiddenNamespaces.includes( ns ) ) {
 									updateSettings( { hiddenNamespaces: settings.hiddenNamespaces.filter( ( n ) => n !== ns ) } );
 								}
-								setFilters( { search: ns, methods: [], publicOnly: false } );
+								setFilters( { search: ns, methods: [], publicOnly: false, fields: false } );
 								searchRef.current?.focus();
 							} }
 						/>
+					) }
+
+					{ data && ! panel && current && note && (
+						<div className="rmk-callout rmk-callout--info rmk-main-note" role="status">
+							<Icon name="alert" size={ 16 } />
+							<div>
+								<p>{ note }</p>
+							</div>
+							<button type="button" className="rmk-btn rmk-btn--icon rmk-btn--ghost" onClick={ () => setNote( null ) } aria-label={ __( 'Dismiss', 'routemark' ) }>
+								<Icon name="x" size={ 14 } />
+							</button>
+						</div>
 					) }
 
 					{ data && ! panel && current && (
@@ -333,10 +452,31 @@ export default function App() {
 							sendAs={ sendAs }
 							onSendAs={ setSendAs }
 							onRecord={ record }
+							onOpenUrl={ openUrl }
 						/>
 					) }
 				</main>
 			</div>
+
+			{ importing && data && (
+				<ImportDialog
+					routes={ data.routes }
+					onClose={ () => setImporting( false ) }
+					onImport={ ( result ) => {
+						setImporting( false );
+						openReplay(
+							result,
+							result.dropped.length
+								? sprintf(
+										/* translators: %s: comma-separated header names */
+										__( 'Imported. Left out these headers, since Routemark sends the request with your login: %s.', 'routemark' ),
+										result.dropped.join( ', ' )
+								  )
+								: __( 'Imported. Check the request before you send it, it runs against this site.', 'routemark' )
+						);
+					} }
+				/>
+			) }
 		</div>
 	);
 }

@@ -11,6 +11,7 @@ export const DEFAULT_SETTINGS: Settings = {
 	jsonDepth: 2,
 	snippetLanguage: 'apiFetch',
 	hiddenNamespaces: [],
+	recorderInBar: true,
 };
 
 export function initialSettings(): Settings {

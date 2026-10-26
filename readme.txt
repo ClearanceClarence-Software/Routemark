@@ -4,7 +4,7 @@ Tags: rest api, developer, debug, headless, json
 Requires at least: 6.6
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.3.3
+Stable tag: 0.4.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -19,8 +19,13 @@ What you get:
 * The full route list, grouped by namespace, with a filter and method toggles.
 * Which plugin, theme or part of WordPress added each route, so `wc/v3` shows up as WooCommerce. You can search by plugin name too.
 * Arguments for each endpoint, with types, defaults, allowed values and descriptions.
-* A request form that pre-fills query parameters from those arguments and can build a JSON body skeleton for POST/PUT/PATCH.
-* The response with status, timing, size and the WordPress pagination headers, plus a collapsible JSON view and the raw text.
+* A request form that pre-fills query parameters from those arguments. Bodies for POST/PUT/PATCH can be filled in as a form built from the route's arguments, with a check on each field before you send, or written as JSON.
+* The response with status, timing, size and the WordPress pagination headers, plus a collapsible JSON view you can search, a table view for lists, and the raw text. Links in the JSON open in Routemark, and Previous/Next pages through paged results.
+* Compare: send the same request as two users, or before and after a change, and see the difference line by line.
+* "Why was this refused?": when a request comes back 401 or 403, Routemark shows which permission callback refused it, the capabilities it checks, and whether the user you sent as has them.
+* A recorder that catches the REST calls wp-admin makes while you work (the block editor, WooCommerce, any plugin screen), so you can open one in Routemark and send it again. Start and stop it from the admin bar.
+* Paste a cURL command to open it as a request.
+* Search routes by the fields they take or return, like "author" or "sku".
 * Server numbers for every request you send: how many database queries it ran, how long PHP spent on it and peak memory. So you can tell a slow endpoint from a slow connection.
 * A Hooks tab that lists every plugin hooked into a route's filters and actions (rest_prepare_post, rest_post_dispatch and so on), with the function, priority and plugin name. When a field shows up that you didn't expect, or goes missing, this tells you who did it.
 * "Copy as code" for wp.apiFetch, fetch, cURL and PHP (rest_do_request).
@@ -29,6 +34,7 @@ What you get:
 * Settings for history, confirming before DELETE (or any change), the default code language, how much of a JSON response opens, light or dark, and namespaces to hide.
 * A short list of endpoints that are open to anyone without logging in, which is handy when you're checking what a site exposes.
 * A Report that goes through every route and flags the ones worth a look: no permission check at all, anyone allowed to change data, arguments WordPress never checks, and routes with no schema. Grouped by plugin, worst first, with a button to open each one as logged out. You can copy it as text for a ticket or a client.
+* A Site Health test that warns when a route lets anyone change data, with a link to the Report.
 
 Only administrators (the manage_options capability) can see the page or the route list.
 
@@ -38,7 +44,7 @@ Requests you send from Routemark are real. A DELETE deletes. Use a staging or lo
 
 Routemark doesn't contact any outside server and doesn't collect anything. It only calls your own site's REST API, and only when you press Send. Your settings are saved in the database as user meta (routemark_settings), one copy per user. They're removed when you delete the plugin.
 
-Request history is stored in your browser (localStorage), never in the database. It's kept per WordPress user, you can turn it off or clear it in Settings, and anything that looks like a secret (Authorization headers, fields named password, token, api_key and so on) is blanked before it's saved.
+Request history and recorded calls are stored in your browser (localStorage), never in the database. They're kept per WordPress user, you can turn history off or clear either one, and anything that looks like a secret (Authorization headers, fields named password, token, api_key and so on) is blanked before it's saved. The recorder only runs for administrators, only after they start it, and only in their own browser.
 
 == Installation ==
 
@@ -104,7 +110,7 @@ Yes. There are PHP hooks (routemark_loaded, routemark_app_data, routemark_enqueu
 
 = Is there a paid version? =
 
-Yes, Routemark Pro: snapshots of your routes with a diff of what each plugin update changed, email alerts when a route that changes data becomes open to anyone, and export to OpenAPI, Postman and TypeScript. It's a separate plugin that adds to this one. Nothing in this plugin is locked or limited, and it doesn't advertise beyond a link on the Plugins screen and a card at the bottom of Settings.
+Yes, Routemark Pro: rules that lock down or rate-limit routes without editing the plugin that added them, API tests that run on a schedule or after updates, a log of the REST traffic your site gets, snapshots with a diff of what each plugin update changed and alerts by email, Slack or webhook, a public API docs page, WP-CLI commands, and export to OpenAPI, Postman and TypeScript. It's a separate plugin that adds to this one. Nothing in this plugin is locked or limited, and it doesn't advertise beyond a link on the Plugins screen and a card at the bottom of Settings.
 
 Get Routemark Pro: https://checkout.freemius.com/plugin/42850/plan/74584/
 
@@ -137,6 +143,19 @@ Routemark bundles the Atkinson Hyperlegible Next and Atkinson Hyperlegible Mono 
 
 == Changelog ==
 
+= 0.4.0 =
+* New: a recorder for the REST calls wp-admin makes. Start it from the admin bar, use the block editor or any plugin screen, then open a recorded call in Routemark and send it again. Recorded calls stay in your browser, with secrets blanked.
+* New: fill in request bodies as a form built from the route's arguments, with each field checked before you send. New drafts only include the required fields.
+* New: "Why was this refused?" on 401 and 403 responses: which permission callback answered, the capabilities it checks, and whether the user you sent as has them. One click sends it again as you.
+* New: a table view and search for JSON responses, links in the JSON that open in Routemark, and Previous/Next for paged results.
+* New: Compare. Send the same request as someone else, or again after a change, and see what's different.
+* New: Import a cURL command as a request.
+* New: search routes by field name, and see which fields matched.
+* New: a Site Health test for routes that let anyone change data.
+* New setting: Show "REST calls" in the admin bar, to hide the recorder's menu when you don't need it.
+* The top bar folds its labels into icons when there isn't room for them, and the response toolbar moves its buttons to a second row instead of cutting off tabs.
+* For developers: Report findings can get buttons from add-ons (routemark.findingActions) and a note (finding.note), and add-ons can tell Routemark to redraw (routemark.extensionsChanged). New endpoint routemark/v1/permission, admins only.
+
 = 0.3.3 =
 * Fix: with Routemark Pro active, activating Routemark showed a "Constant already defined" warning and "unexpected output" notice.
 
@@ -161,6 +180,9 @@ Routemark bundles the Atkinson Hyperlegible Next and Atkinson Hyperlegible Mono 
 * First release on WordPress.org.
 
 == Upgrade Notice ==
+
+= 0.4.0 =
+Adds a recorder for wp-admin's REST calls, a form for request bodies, "Why was this refused?", Compare, cURL import, table view and search for responses, and a Site Health test.
 
 = 0.3.3 =
 Fixes a PHP warning when Routemark Pro is also active.

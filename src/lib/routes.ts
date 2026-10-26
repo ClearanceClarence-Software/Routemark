@@ -1,7 +1,7 @@
 import { __, sprintf } from '@wordpress/i18n';
 
 import { METHODS } from '../types';
-import type { Endpoint, Filters, HttpMethod, RouteInfo } from '../types';
+import type { Endpoint, Filters, HttpMethod, RouteInfo, SchemaNode } from '../types';
 
 /**
  * '/wp/v2/posts/(?P<id>[\d]+)'  ->  '/wp/v2/posts/{id}'
@@ -98,12 +98,52 @@ export function filterRoutes( routes: RouteInfo[], filters: Filters ): RouteInfo
 			}
 		}
 		if ( terms.length > 0 ) {
+			if ( filters.fields ) {
+				const names = fieldNames( route );
+				return terms.every( ( t ) => names.some( ( n ) => n.includes( t ) ) );
+			}
 			// plugin name is in there too, so typing "woo" finds WooCommerce's routes
 			const haystack = `${ routeToTemplate( route.route ) } ${ route.source?.name ?? '' }`.toLowerCase();
 			return terms.every( ( t ) => haystack.includes( t ) );
 		}
 		return true;
 	} );
+}
+
+/**
+ * Every field name a route deals with, lowercase: its arguments and the
+ * properties in its schema, nested ones included as "parent.child" too.
+ */
+export function fieldNames( route: RouteInfo ): string[] {
+	const names = new Set< string >();
+	route.endpoints.forEach( ( e ) => Object.keys( e.args ?? {} ).forEach( ( k ) => names.add( k.toLowerCase() ) ) );
+	const walk = ( node: SchemaNode | undefined, prefix: string, depth: number ) => {
+		if ( ! node || depth > 3 ) {
+			return;
+		}
+		Object.entries( node.properties ?? {} ).forEach( ( [ k, child ] ) => {
+			const name = ( prefix ? `${ prefix }.${ k }` : k ).toLowerCase();
+			names.add( k.toLowerCase() );
+			names.add( name );
+			walk( child, name, depth + 1 );
+		} );
+		if ( node.items ) {
+			walk( node.items, prefix, depth + 1 );
+		}
+	};
+	walk( route.schema ?? undefined, '', 0 );
+	return Array.from( names );
+}
+
+/** Which of a route's fields match the search, for showing under the route. */
+export function matchingFields( route: RouteInfo, search: string ): string[] {
+	const terms = search.trim().toLowerCase().split( /\s+/ ).filter( Boolean );
+	if ( ! terms.length ) {
+		return [];
+	}
+	return fieldNames( route )
+		.filter( ( n ) => ! n.includes( '.' ) && terms.some( ( t ) => n.includes( t ) ) )
+		.slice( 0, 4 );
 }
 
 export interface RouteGroup {

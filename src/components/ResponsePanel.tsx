@@ -1,14 +1,16 @@
-import { useState } from '@wordpress/element';
+import { useMemo, useState } from '@wordpress/element';
 import { __, _n, sprintf } from '@wordpress/i18n';
 
 import { formatBytes } from '../lib/request';
 import type { RunResult, SendAsUser } from '../types';
 import { runAction, type RequestContext, type ResponseActionDef } from '../lib/extensions';
-import JsonView from './JsonView';
-import { sendAsLabel } from './SendAs';
+import DeniedHelp from './DeniedHelp';
+import JsonView, { pruneJson } from './JsonView';
+import SendAs, { sendAsLabel } from './SendAs';
+import TableView, { isTable } from './TableView';
 import { CopyButton, Icon, Tabs } from './ui';
 
-type View = 'pretty' | 'raw' | 'headers';
+type View = 'pretty' | 'table' | 'raw' | 'headers';
 
 const REASONS: Record< number, string > = {
 	400: 'Bad Request',
@@ -36,11 +38,49 @@ interface Props {
 	context?: RequestContext;
 	running: boolean;
 	jsonDepth?: number;
+	/** The route and method sent, for the "why was this refused" lookup. */
+	route?: string;
+	method?: string;
+	/** Opens a REST URL in Routemark. False if it isn't one. */
+	onLink?: ( url: string ) => boolean;
+	isLink?: ( url: string ) => boolean;
+	/** The page that was asked for, and a way to ask for another. */
+	page?: number;
+	onPage?: ( page: number ) => void;
+	onRetryAsMe?: () => void;
+	/** Send the same request as someone else and show both. */
+	onCompare?: ( as: SendAsUser | null ) => void;
 }
 
-export default function ResponsePanel( { result, sentAs = null, running, jsonDepth = 2, actions = [], context }: Props ) {
+export default function ResponsePanel( {
+	result,
+	sentAs = null,
+	running,
+	jsonDepth = 2,
+	actions = [],
+	context,
+	route,
+	method,
+	onLink,
+	isLink,
+	page = 1,
+	onPage,
+	onRetryAsMe,
+	onCompare,
+}: Props ) {
 	const [ view, setView ] = useState< View >( 'pretty' );
 	const [ depth, setDepth ] = useState( { open: jsonDepth, rev: 0 } );
+	const [ search, setSearch ] = useState( '' );
+	const term = search.trim().toLowerCase();
+	const found = useMemo( () => ( result?.isJson && term ? pruneJson( result.json, term ) : null ), [ result, term ] );
+	const table = !! result?.isJson && isTable( result.json );
+	const rows = useMemo(
+		() =>
+			table && result ? ( result.json as Record< string, unknown >[] ).filter( ( r ) => ! term || JSON.stringify( r ).toLowerCase().includes( term ) ) : [],
+		[ table, result, term ]
+	);
+	// Stay on Body if a new response isn't a list any more.
+	const shown: View = view === 'table' && ! table ? 'pretty' : view;
 
 	if ( ! result ) {
 		return (
@@ -63,6 +103,8 @@ export default function ResponsePanel( { result, sentAs = null, running, jsonDep
 	const headerCount = Object.keys( result.headers ).length;
 	const total = result.headers[ 'x-wp-total' ];
 	const pages = result.headers[ 'x-wp-totalpages' ];
+	const pageCount = Number( pages ?? 0 );
+	const denied = result.status === 401 || result.status === 403;
 	// The server says who it ran as. If we asked for someone and that header
 	// is missing (and it wasn't our own refusal), something else answered the
 	// request first, so it most likely ran as you.
@@ -156,18 +198,53 @@ export default function ResponsePanel( { result, sentAs = null, running, jsonDep
 				</div>
 			) }
 
+			{ denied && route && method && ! switchMissed && (
+				<DeniedHelp route={ route } method={ method } sentAs={ sentAs } code={ error?.code ?? null } status={ result.status } onRetryAsMe={ onRetryAsMe } />
+			) }
+
+			{ onPage && pageCount > 1 && (
+				<div className="rmk-pager" role="navigation" aria-label={ __( 'Pages', 'routemark' ) }>
+					<button type="button" className="rmk-btn rmk-btn--ghost" disabled={ page <= 1 || running } onClick={ () => onPage( page - 1 ) }>
+						<Icon name="arrowLeft" size={ 14 } /> { __( 'Previous', 'routemark' ) }
+					</button>
+					<span className="rmk-pager-text">
+						{ sprintf(
+							/* translators: 1: current page, 2: number of pages */
+							__( 'Page %1$d of %2$d', 'routemark' ),
+							page,
+							pageCount
+						) }
+					</span>
+					<button type="button" className="rmk-btn rmk-btn--ghost" disabled={ page >= pageCount || running } onClick={ () => onPage( page + 1 ) }>
+						{ __( 'Next', 'routemark' ) } <Icon name="arrowRight" size={ 14 } />
+					</button>
+				</div>
+			) }
+
 			<Tabs< View >
 				label={ __( 'Response view', 'routemark' ) }
-				active={ view }
+				active={ shown }
 				onChange={ setView }
 				tabs={ [
 					{ id: 'pretty', label: __( 'Body', 'routemark' ) },
+					{ id: 'table', label: __( 'Table', 'routemark' ), hidden: ! table },
 					{ id: 'raw', label: __( 'Raw', 'routemark' ) },
 					{ id: 'headers', label: __( 'Headers', 'routemark' ), count: headerCount },
 				] }
 				trailing={
 					<>
-						{ view === 'pretty' && result.isJson && (
+						{ onCompare && (
+							<SendAs
+								id="rmk-compare"
+								label={ __( 'Compare with', 'routemark' ) }
+								value={ null }
+								onChange={ ( as ) => onCompare( as ) }
+								showNote={ false }
+								hideYou={ ! sentAs }
+								variant="inline"
+							/>
+						) }
+						{ shown === 'pretty' && result.isJson && ! term && (
 							<>
 								<button
 									type="button"
@@ -200,22 +277,67 @@ export default function ResponsePanel( { result, sentAs = null, running, jsonDep
 									{ a.label }
 								</button>
 							) ) }
-						<CopyButton text={ view === 'headers' ? JSON.stringify( result.headers, null, 2 ) : pretty } />
+						<CopyButton text={ shown === 'headers' ? JSON.stringify( result.headers, null, 2 ) : pretty } />
 					</>
 				}
 			/>
 
+			{ result.isJson && ( shown === 'pretty' || shown === 'table' ) && (
+				<div className="rmk-response-search">
+					<label className="rmk-search">
+						<Icon name="search" size={ 14 } />
+						<span className="screen-reader-text">{ __( 'Search the response', 'routemark' ) }</span>
+						<input
+							type="search"
+							className="rmk-search-input"
+							placeholder={ shown === 'table' ? __( 'Filter rows', 'routemark' ) : __( 'Search keys and values', 'routemark' ) }
+							value={ search }
+							onChange={ ( e ) => setSearch( e.target.value ) }
+						/>
+					</label>
+					{ term && shown === 'pretty' && found && (
+						<span className="rmk-muted">
+							{ sprintf(
+								/* translators: %d: number of matches */
+								_n( '%d match', '%d matches', found.matches, 'routemark' ),
+								found.matches
+							) }
+						</span>
+					) }
+					{ term && shown === 'table' && (
+						<span className="rmk-muted">
+							{ sprintf(
+								/* translators: 1: rows shown, 2: all rows */
+								__( '%1$d of %2$d rows', 'routemark' ),
+								rows.length,
+								( result.json as unknown[] ).length
+							) }
+						</span>
+					) }
+				</div>
+			) }
+
 			<div className="rmk-response-body">
-				{ view === 'pretty' &&
+				{ shown === 'pretty' &&
 					( result.isJson ? (
-						<JsonView value={ result.json } openDepth={ depth.open } revision={ depth.rev } />
+						term ? (
+							found && found.value !== undefined ? (
+								<JsonView value={ found.value } openDepth={ 99 } highlight={ term } onLink={ onLink } isLink={ isLink } />
+							) : (
+								<p className="rmk-muted rmk-response-nomatch">{ __( 'Nothing in the response matches that.', 'routemark' ) }</p>
+							)
+						) : (
+							<JsonView value={ result.json } openDepth={ depth.open } revision={ depth.rev } onLink={ onLink } isLink={ isLink } />
+						)
 					) : (
 						<pre className="rmk-pre">{ result.raw || __( '(empty body)', 'routemark' ) }</pre>
 					) ) }
 
-				{ view === 'raw' && <pre className="rmk-pre rmk-pre--wrap">{ result.raw || __( '(empty body)', 'routemark' ) }</pre> }
+				{ shown === 'table' && <TableView rows={ rows } onLink={ onLink } /> }
 
-				{ view === 'headers' && (
+				{ shown === 'raw' && <pre className="rmk-pre rmk-pre--wrap">{ result.raw || __( '(empty body)', 'routemark' ) }</pre> }
+
+				{ shown === 'headers' && (
 					<table className="rmk-table rmk-table--headers">
 						<tbody>
 							{ Object.entries( result.headers )

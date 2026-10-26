@@ -3,7 +3,7 @@
  * Plugin Name:       Routemark
  * Plugin URI:        https://github.com/ClearanceClarence-Software/Routemark
  * Description:       Browse every REST API route on your site and send test requests to it from wp-admin.
- * Version:           0.3.3
+ * Version:           0.4.0
  * Requires at least: 6.6
  * Requires PHP:      7.4
  * Author:            CC Software
@@ -17,7 +17,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'ROUTEMARK_VERSION', '0.3.3' );
+define( 'ROUTEMARK_VERSION', '0.4.0' );
 // Version of the extension points add-ons use (hooks here and in src/lib/extensions.tsx).
 // Goes up only when a change would break an add-on.
 define( 'ROUTEMARK_API_VERSION', 1 );
@@ -36,5 +36,8 @@ require_once ROUTEMARK_DIR . 'includes/class-settings.php';
 require_once ROUTEMARK_DIR . 'includes/class-send-as.php';
 require_once ROUTEMARK_DIR . 'includes/class-request-stats.php';
 require_once ROUTEMARK_DIR . 'includes/class-hooks.php';
+require_once ROUTEMARK_DIR . 'includes/class-permission.php';
+require_once ROUTEMARK_DIR . 'includes/class-recorder.php';
+require_once ROUTEMARK_DIR . 'includes/class-site-health.php';
 
 add_action( 'plugins_loaded', array( \Routemark\Plugin::class, 'instance' ) );

@@ -155,7 +155,7 @@ class Hooks {
 			// post_type and taxonomy are protected on core's controllers, and
 			// plugins that extend them inherit that.
 			foreach ( array( 'post_type', 'taxonomy' ) as $property ) {
-				$value = $this->read_property( $controller, $property );
+				$value = self::read_property( $controller, $property );
 				if ( is_string( $value ) && '' !== $value ) {
 					$subjects[] = $value;
 				}
@@ -166,14 +166,14 @@ class Hooks {
 	}
 
 	/**
-	 * Reads a property whatever its visibility. Read only, and only the two
-	 * names above.
+	 * Reads a property whatever its visibility. Read only. Used for a
+	 * controller's post_type and taxonomy, here and in class-permission.php.
 	 *
 	 * @param object $controller Controller.
 	 * @param string $property   Property name.
 	 * @return mixed
 	 */
-	private function read_property( $controller, string $property ) {
+	public static function read_property( $controller, string $property ) {
 		try {
 			$ref = new \ReflectionObject( $controller );
 			while ( $ref && ! $ref->hasProperty( $property ) ) {
@@ -214,7 +214,7 @@ class Hooks {
 				foreach ( $list as $entry ) {
 					$callbacks[] = array(
 						'priority' => (int) $priority,
-						'callback' => $this->describe( $entry['function'] ),
+						'callback' => self::describe( $entry['function'] ),
 						'source'   => $sources->for_callback( $entry['function'] ),
 					);
 				}
@@ -237,7 +237,7 @@ class Hooks {
 	 * @param mixed $callback Callable.
 	 * @return string
 	 */
-	private function describe( $callback ): string {
+	public static function describe( $callback ): string {
 		if ( is_string( $callback ) ) {
 			return $callback . '()';
 		}

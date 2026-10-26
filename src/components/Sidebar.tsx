@@ -2,11 +2,15 @@ import { useEffect, useRef, useState } from '@wordpress/element';
 import { __, _n, sprintf } from '@wordpress/i18n';
 import type { RefObject } from 'react';
 
-import { groupSource, isPublicRoute, localPath, routeMethods, type RouteGroup } from '../lib/routes';
+import { groupSource, isPublicRoute, localPath, matchingFields, routeMethods, type RouteGroup } from '../lib/routes';
 import { METHODS } from '../types';
 import type { Filters, HistoryEntry, HttpMethod } from '../types';
+import type { RecordedCall, RecorderState } from '../lib/recorded-store';
+import RecordedList from './RecordedList';
 import { sendAsLabel } from './SendAs';
 import { Icon, Method, PathText } from './ui';
+
+export type SidebarView = 'routes' | 'history' | 'recorded';
 
 interface Props {
 	groups: RouteGroup[];
@@ -21,6 +25,14 @@ interface Props {
 	onRestore: ( entry: HistoryEntry ) => void;
 	onClearHistory: () => void;
 	onStep: ( delta: number ) => void;
+	view: SidebarView;
+	onView: ( view: SidebarView ) => void;
+	recorder: {
+		state: RecorderState;
+		onChange: ( next: RecorderState ) => void;
+		onOpen: ( call: RecordedCall ) => void;
+		canOpen: ( call: RecordedCall ) => boolean;
+	};
 }
 
 function timeAgo( at: number ): string {
@@ -54,12 +66,14 @@ export default function Sidebar( {
 	onRestore,
 	onClearHistory,
 	onStep,
+	view,
+	onView: setView,
+	recorder,
 }: Props ) {
-	const [ view, setView ] = useState< 'routes' | 'history' >( 'routes' );
 	const [ collapsed, setCollapsed ] = useState< Set< string > >( () => new Set() );
 	const listRef = useRef< HTMLDivElement >( null );
 
-	const filtering = filters.search !== '' || filters.methods.length > 0 || filters.publicOnly;
+	const filtering = filters.search !== '' || filters.methods.length > 0 || filters.publicOnly || filters.fields;
 
 	// keep the selected route on screen when stepping with the arrow keys
 	useEffect( () => {
@@ -105,6 +119,16 @@ export default function Sidebar( {
 					<Icon name="clock" size={ 14 } /> { __( 'History', 'routemark' ) }
 					{ history.length > 0 && <span className="rmk-tab-count">{ history.length }</span> }
 				</button>
+				<button
+					type="button"
+					role="tab"
+					aria-selected={ view === 'recorded' }
+					className={ `${ view === 'recorded' ? 'is-active' : '' }${ recorder.state.on ? ' is-recording' : '' }` }
+					onClick={ () => setView( 'recorded' ) }
+				>
+					<Icon name="record" size={ 14 } /> { __( 'Recorded', 'routemark' ) }
+					{ recorder.state.calls.length > 0 && <span className="rmk-tab-count">{ recorder.state.calls.length }</span> }
+				</button>
 			</div>
 
 			{ view === 'routes' && (
@@ -117,7 +141,7 @@ export default function Sidebar( {
 								ref={ searchRef }
 								type="search"
 								className="rmk-search-input"
-								placeholder={ __( 'Filter routes', 'routemark' ) }
+								placeholder={ filters.fields ? __( 'Find routes by field name', 'routemark' ) : __( 'Filter routes', 'routemark' ) }
 								value={ filters.search }
 								onChange={ ( e ) => onFilters( { ...filters, search: e.target.value } ) }
 								onKeyDown={ ( e ) => {
@@ -153,6 +177,15 @@ export default function Sidebar( {
 							>
 								<Icon name="globe" size={ 12 } /> { __( 'Public', 'routemark' ) }
 							</button>
+							<button
+								type="button"
+								aria-pressed={ filters.fields }
+								className={ `rmk-chip rmk-chip--fields${ filters.fields ? ' is-on' : '' }` }
+								onClick={ () => onFilters( { ...filters, fields: ! filters.fields } ) }
+								title={ __( 'Search the fields routes accept and return, like "author" or "coupon", instead of their paths', 'routemark' ) }
+							>
+								<Icon name="field" size={ 12 } /> { __( 'Fields', 'routemark' ) }
+							</button>
 						</div>
 
 						<div className="rmk-filter-meta">
@@ -168,7 +201,7 @@ export default function Sidebar( {
 								<button
 									type="button"
 									className="rmk-link"
-									onClick={ () => onFilters( { search: '', methods: [], publicOnly: false } ) }
+									onClick={ () => onFilters( { search: '', methods: [], publicOnly: false, fields: false } ) }
 								>
 									{ __( 'Clear filters', 'routemark' ) }
 								</button>
@@ -211,6 +244,13 @@ export default function Sidebar( {
 													>
 														<span className="rmk-route-path">
 															<PathText template={ localPath( route ) } />
+															{ filters.fields && filters.search.trim() !== '' && (
+																<span className="rmk-route-fields">
+																	{ matchingFields( route, filters.search ).map( ( f ) => (
+																		<code key={ f }>{ f }</code>
+																	) ) }
+																</span>
+															) }
 														</span>
 														{ isPublicRoute( route ) && (
 															<span className="rmk-route-public" title={ __( 'Has public endpoints', 'routemark' ) }>
@@ -233,6 +273,8 @@ export default function Sidebar( {
 					</div>
 				</>
 			) }
+
+			{ view === 'recorded' && <RecordedList { ...recorder } /> }
 
 			{ view === 'history' && (
 				<div className="rmk-tree">

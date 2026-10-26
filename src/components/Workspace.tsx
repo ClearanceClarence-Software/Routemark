@@ -17,13 +17,16 @@ import {
 } from '../lib/extensions';
 import { needsConfirm } from '../lib/settings';
 import type { Draft, HistoryEntry, HttpMethod, RouteInfo, RunResult, SendAsUser, Settings } from '../types';
+import BodyForm, { formArgs, formProblems } from './BodyForm';
 import CodeEditor from './CodeEditor';
+import CompareView from './CompareView';
 import DocsView from './DocsView';
 import HooksView from './HooksView';
 import KeyValueEditor from './KeyValueEditor';
 import ResponsePanel from './ResponsePanel';
 import SendAs from './SendAs';
 import { CopyButton, Icon, PathText, Tabs } from './ui';
+import { useStoredState } from '../lib/hooks';
 
 // Add-on tabs are 'ext:<id>'.
 type Tab = 'params' | 'body' | 'headers' | 'docs' | 'hooks' | 'code' | `ext:${ string }`;
@@ -35,9 +38,31 @@ interface Props {
 	sendAs: SendAsUser | null;
 	onSendAs: ( as: SendAsUser | null ) => void;
 	onRecord: ( entry: HistoryEntry ) => void;
+	/** Opens a REST URL (a link in a response) in Routemark. False if it isn't one. */
+	onOpenUrl?: ( url: string ) => boolean;
 }
 
-export default function Workspace( { route, settings, preset, sendAs, onSendAs, onRecord }: Props ) {
+// A string is worth making clickable if it points at this site's REST API.
+function isRestUrl( value: string ): boolean {
+	if ( ! /^https?:\/\//.test( value ) ) {
+		return false;
+	}
+	const root = window.routemarkSettings?.restRoot ?? '';
+	try {
+		const u = new URL( value );
+		const r = new URL( root, window.location.href );
+		return u.origin === r.origin && ( u.searchParams.has( 'rest_route' ) || u.pathname.startsWith( r.pathname.replace( /\/?$/, '/' ) ) );
+	} catch {
+		return false;
+	}
+}
+
+interface Comparison {
+	a: { as: SendAsUser | null; result: RunResult };
+	b: { as: SendAsUser | null; result: RunResult | null };
+}
+
+export default function Workspace( { route, settings, preset, sendAs, onSendAs, onRecord, onOpenUrl }: Props ) {
 	const [ draft, setDraft ] = useState< Draft >( () => preset ?? newDraft( route, undefined, settings.suggestParams ) );
 	const [ result, setResult ] = useState< RunResult | null >( null );
 	// Who the shown response was sent as, which may not be who's picked now.
@@ -46,6 +71,10 @@ export default function Workspace( { route, settings, preset, sendAs, onSendAs, 
 	// A built-in language, or 'ext:<id>' for one an add-on added.
 	const [ snippet, setSnippet ] = useState< string >( settings.snippetLanguage );
 	const [ armed, setArmed ] = useState( false );
+	// Send once the state that was just changed (a page number, who to send as) is in.
+	const [ pending, setPending ] = useState( false );
+	const [ compare, setCompare ] = useState< Comparison | null >( null );
+	const [ bodyMode, setBodyMode ] = useStoredState< 'form' | 'json' >( 'routemark.bodyMode', 'form' );
 
 	const template = routeToTemplate( route.route );
 	const source = sourceLabel( route );
@@ -55,6 +84,10 @@ export default function Workspace( { route, settings, preset, sendAs, onSendAs, 
 	const path = buildPath( route, draft );
 	const missing = missingParams( draft );
 	const bodyError = hasBody( draft.method ) ? jsonError( draft.body ) : null;
+	const fields = endpoint ? formArgs( endpoint.args, params ) : [];
+	const problems = hasBody( draft.method ) && ! bodyError ? formProblems( fields, draft.body ) : [];
+	const pageRow = draft.query.find( ( r ) => r.enabled && r.key === 'page' );
+	const page = Math.max( 1, Number( pageRow?.value ) || 1 );
 	const enabledQuery = draft.query.filter( ( r ) => r.enabled ).length;
 	const enabledHeaders = draft.headers.filter( ( r ) => r.enabled && r.key ).length;
 	const canSend = ! running && missing.length === 0 && ! bodyError;
@@ -99,6 +132,7 @@ export default function Workspace( { route, settings, preset, sendAs, onSendAs, 
 		const res = await send( path, draft, sendAs );
 		setResult( res );
 		setResultAs( sendAs );
+		setCompare( null );
 		setRunning( false );
 		onRecord( {
 			id: uid(),
@@ -112,6 +146,31 @@ export default function Workspace( { route, settings, preset, sendAs, onSendAs, 
 		} );
 		requestSent( { route, draft, path, url: fullUrl( path ), sendAs, result: res } );
 	}, [ canSend, confirmFirst, armed, path, draft, sendAs, route, onRecord ] );
+
+	useEffect( () => {
+		if ( pending ) {
+			setPending( false );
+			run();
+		}
+	}, [ pending, run ] );
+
+	const goToPage = ( n: number ) => {
+		const query = draft.query.some( ( r ) => r.key === 'page' )
+			? draft.query.map( ( r ) => ( r.key === 'page' ? { ...r, enabled: true, value: String( n ) } : r ) )
+			: [ ...draft.query, { id: uid(), enabled: true, key: 'page', value: String( n ) } ];
+		setDraft( { ...draft, query } );
+		setPending( true );
+	};
+
+	const compareWith = async ( other: SendAsUser | null ) => {
+		if ( ! result ) {
+			return;
+		}
+		const base = { as: resultAs, result };
+		setCompare( { a: base, b: { as: other, result: null } } );
+		const res = await send( path, draft, other );
+		setCompare( ( c ) => ( c && c.a === base ? { ...c, b: { as: other, result: res } } : c ) );
+	};
 
 	// Ctrl/Cmd+Enter sends, from anywhere on the page
 	const runRef = useRef( run );
@@ -210,7 +269,7 @@ export default function Workspace( { route, settings, preset, sendAs, onSendAs, 
 
 					<SendAs value={ sendAs } onChange={ onSendAs } />
 
-					{ ( missing.length > 0 || bodyError || destructive ) && (
+					{ ( missing.length > 0 || bodyError || destructive || problems.length > 0 ) && (
 						<div className="rmk-address-notes">
 							{ missing.length > 0 && (
 								<p className="rmk-hint">
@@ -226,6 +285,16 @@ export default function Workspace( { route, settings, preset, sendAs, onSendAs, 
 								<p className="rmk-hint rmk-hint--error">
 									<Icon name="alert" size={ 14 } />
 									{ __( 'The body is not valid JSON:', 'routemark' ) } { bodyError }
+								</p>
+							) }
+							{ problems.length > 0 && (
+								<p className="rmk-hint">
+									<Icon name="alert" size={ 14 } />
+									{ sprintf(
+										/* translators: %s: comma-separated field names */
+										__( 'WordPress will likely reject these fields as they are: %s. See the Body tab.', 'routemark' ),
+										problems.join( ', ' )
+									) }
 								</p>
 							) }
 							{ destructive && missing.length === 0 && (
@@ -303,7 +372,14 @@ export default function Workspace( { route, settings, preset, sendAs, onSendAs, 
 						{ tab === 'body' && (
 							<div className="rmk-section">
 								<div className="rmk-section-bar">
-									<h4 className="rmk-label">{ __( 'JSON body', 'routemark' ) }</h4>
+									<div className="rmk-seg" role="group" aria-label={ __( 'Body editor', 'routemark' ) }>
+										<button type="button" aria-pressed={ bodyMode === 'form' } className={ bodyMode === 'form' ? 'is-on' : '' } onClick={ () => setBodyMode( 'form' ) }>
+											<Icon name="form" size={ 13 } /> { __( 'Form', 'routemark' ) }
+										</button>
+										<button type="button" aria-pressed={ bodyMode === 'json' } className={ bodyMode === 'json' ? 'is-on' : '' } onClick={ () => setBodyMode( 'json' ) }>
+											<Icon name="braces" size={ 13 } /> { __( 'JSON', 'routemark' ) }
+										</button>
+									</div>
 									<span className="rmk-spacer" />
 									<button
 										type="button"
@@ -312,21 +388,27 @@ export default function Workspace( { route, settings, preset, sendAs, onSendAs, 
 									>
 										<Icon name="wand" size={ 14 } /> { __( 'Insert example', 'routemark' ) }
 									</button>
-									<button
-										type="button"
-										className="rmk-btn rmk-btn--ghost"
-										disabled={ !! bodyError || draft.body.trim() === '' }
-										onClick={ () => setDraft( { ...draft, body: JSON.stringify( JSON.parse( draft.body ), null, 2 ) } ) }
-									>
-										{ __( 'Format', 'routemark' ) }
-									</button>
+									{ bodyMode === 'json' && (
+										<button
+											type="button"
+											className="rmk-btn rmk-btn--ghost"
+											disabled={ !! bodyError || draft.body.trim() === '' }
+											onClick={ () => setDraft( { ...draft, body: JSON.stringify( JSON.parse( draft.body ), null, 2 ) } ) }
+										>
+											{ __( 'Format', 'routemark' ) }
+										</button>
+									) }
 								</div>
-								<CodeEditor
-									label={ __( 'JSON body', 'routemark' ) }
-									value={ draft.body }
-									onChange={ ( body ) => setDraft( { ...draft, body } ) }
-									onSubmit={ run }
-								/>
+								{ bodyMode === 'form' ? (
+									<BodyForm fields={ fields } body={ draft.body } onChange={ ( body ) => setDraft( { ...draft, body } ) } />
+								) : (
+									<CodeEditor
+										label={ __( 'JSON body', 'routemark' ) }
+										value={ draft.body }
+										onChange={ ( body ) => setDraft( { ...draft, body } ) }
+										onSubmit={ run }
+									/>
+								) }
 							</div>
 						) }
 
@@ -386,14 +468,34 @@ export default function Workspace( { route, settings, preset, sendAs, onSendAs, 
 					</div>
 				</section>
 
-				<ResponsePanel
-					result={ result }
-					sentAs={ resultAs }
-					running={ running }
-					jsonDepth={ settings.jsonDepth }
-					actions={ extActions }
-					context={ context }
-				/>
+				{ compare ? (
+					<CompareView a={ compare.a } b={ compare.b } onClose={ () => setCompare( null ) } />
+				) : (
+					<ResponsePanel
+						result={ result }
+						sentAs={ resultAs }
+						running={ running }
+						jsonDepth={ settings.jsonDepth }
+						actions={ extActions }
+						context={ context }
+						route={ route.route }
+						method={ draft.method }
+						onLink={ onOpenUrl }
+						isLink={ onOpenUrl ? isRestUrl : undefined }
+						page={ page }
+						onPage={ draft.method === 'GET' ? goToPage : undefined }
+						onRetryAsMe={
+							resultAs
+								? () => {
+										onSendAs( null );
+										setPending( true );
+								  }
+								: undefined
+						}
+						// Only reads: comparing a write would run it twice.
+						onCompare={ draft.method === 'GET' && result && result.status !== 0 ? compareWith : undefined }
+					/>
+				) }
 			</div>
 		</div>
 	);

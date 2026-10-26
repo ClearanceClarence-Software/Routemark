@@ -53,5 +53,8 @@ final class Plugin {
 		( new Send_As() )->register();
 		( new Request_Stats() )->register();
 		( new Hooks() )->register();
+		( new Permission() )->register();
+		( new Recorder() )->register();
+		( new Site_Health() )->register();
 	}
 }

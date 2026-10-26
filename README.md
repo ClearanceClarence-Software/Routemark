@@ -49,6 +49,12 @@ rest_post_query
 **Testing your own endpoint while you build it**
 Register a route, hit Reload routes, and it's there with its arguments listed. Fill in the parameters and send. There's no nonce to copy and no application password to set up, because you're already logged in. When it returns a 400, the WordPress error code and message are shown at the top instead of buried in the JSON.
 
+For POST, PUT and PATCH the Body tab builds a form from the route's arguments: the right input for each type, enum values as a dropdown, and a check on each field before you send. Switch to JSON when you'd rather type it, and the two stay in sync.
+
+<p align="center">
+  <img src=".github/readme/body-form.png" alt="The Body tab for POST /wp/v2/posts as a form built from the route's arguments" width="900">
+</p>
+
 **"What does an editor actually get back?"**
 Permission bugs are hard to test from your own admin account, because everything works for you. Under the address bar there's **Send as**: switch it to Logged out, to one user per role, or search for a specific person, and send the same request again. You see exactly what that user gets, 403s and missing fields included. A `POST` sent as an author creates a post by that author, so it's real, same as everything else.
 
@@ -57,6 +63,37 @@ Send as: You            GET /wp/v2/settings   200 OK
 Send as: Jane (Editor)  GET /wp/v2/settings   403 rest_forbidden
 Send as: Logged out     GET /wp/v2/settings   401 rest_forbidden
 ```
+
+**"What is the block editor actually sending?"**
+Click **Record REST calls** in the admin bar, do the thing in wp-admin (save a post, change a WooCommerce setting, click around a plugin's screen), and stop. The Recorded tab in Routemark lists every REST call those screens made, with method, path, status and body. Open one and it lands in the workspace ready to send again, as you or as someone else. Authorization headers and anything named like a password or token are blanked before they're stored, and they only ever stay in your browser.
+
+<p align="center">
+  <img src=".github/readme/recorded.png" alt="The Recorded tab with two calls the block editor made, one of them opened in the workspace" width="900">
+</p>
+
+**"Why was this refused?"**
+When a request comes back 401 or 403, the response shows which permission callback answered (function, file and line), the capabilities it checks, and whether the user you sent as has each one:
+
+```
+GET /wp/v2/settings as Jane (Editor): 403 rest_forbidden
+
+Permission check   WP_REST_Settings_Controller->get_item_permissions_check()
+Defined in         wp-includes/rest-api/endpoints/class-wp-rest-settings-controller.php
+Checks, for Jane   manage_options  ✗
+```
+
+<p align="center">
+  <img src=".github/readme/why-refused.png" alt="GET /wp/v2/settings sent as an editor: 403, with the permission callback, the file it's in, and manage_options marked as missing" width="900">
+</p>
+
+The Site Health screen also gets a test that warns when a route lets anyone change data.
+
+**Comparing two answers**
+**Compare with** sends the same request as someone else, or puts the last response next to this one, and shows a line-by-line diff. Good for "what does a subscriber not see" and "what did that filter change".
+
+<p align="center">
+  <img src=".github/readme/compare.png" alt="GET /wp/v2/users/me compared between you and an editor, with the differing lines marked" width="900">
+</p>
 
 **Front-end or headless work**
 Before you write the fetch call, look up the route: which arguments it takes, their types and defaults, which values an enum allows, and what the response schema looks like. Then send it, check the result, and copy it as code:
@@ -71,6 +108,9 @@ apiFetch( {
 **Debugging a WooCommerce integration**
 Something syncing products is getting odd results. Send the same request yourself, look at the raw response and the headers (`X-WP-Total`, `X-WP-TotalPages`), change one parameter and send again. History keeps what you've tried, so you can go back to an earlier request.
 
+**Finding your way around a big response**
+Search the JSON for a key or value, and only the matches and their parents stay open. A list of objects can be shown as a table. URLs in the response that point back at this site's REST API, like the ones in `_links`, open in Routemark, and Previous/Next pages through `X-WP-TotalPages`. In the route list, the **Fields** chip searches the arguments and response fields of every route, so "sku" or "author" finds the routes that take or return it.
+
 **Calling a route from PHP instead**
 Sometimes the answer is "don't do an HTTP request at all". The Code tab also gives you the `rest_do_request()` version, handy for a cron job or WP-CLI command:
 
@@ -84,7 +124,7 @@ $data     = rest_get_server()->response_to_data( $response, false );
 ```
 
 **Handing a request to someone else**
-Copy as cURL and send it to a colleague or paste it in a ticket. They swap in their application password and run it:
+Copy as cURL and send it to a colleague or paste it in a ticket. **Import** goes the other way: paste a cURL command from a ticket, docs or a browser's network tab and it opens as a request. They swap in their application password and run it:
 
 ```bash
 curl -X POST 'https://example.com/wp-json/wp/v2/posts' \
@@ -95,6 +135,14 @@ curl -X POST 'https://example.com/wp-json/wp/v2/posts' \
   "status": "draft"
 }'
 ```
+
+## Routemark Pro
+
+Routemark stays complete and free. [Routemark Pro](https://checkout.freemius.com/plugin/42850/plan/74584/) is a separate add-on for what comes after finding a problem: Lockdown rules that close or rate-limit routes without editing the plugin behind them, API tests that run on a schedule and after updates, a traffic log, snapshots that show what a plugin update changed, a public API docs page, export to OpenAPI, Postman and TypeScript, and WP-CLI commands for all of it.
+
+<p align="center">
+  <img src=".github/readme/free-vs-pro.png" alt="What's in Routemark and what Routemark Pro adds: Lockdown, API tests, snapshots, alerts, traffic, export, docs page, App password tab and WP-CLI" width="772">
+</p>
 
 ## Install
 
@@ -166,7 +214,11 @@ includes/
   class-send-as.php           Send as: switching user for one request, GET routemark/v1/users
   class-request-stats.php     query count, PHP time and memory for requests sent from the app
   class-hooks.php             GET routemark/v1/hooks, who's hooked into a route
+  class-permission.php        GET routemark/v1/permission, why a request was refused
+  class-recorder.php          loads the recorder on wp-admin screens, the admin bar menu
+  class-site-health.php       the Site Health test for routes anyone can change data with
 src/lib/extensions.tsx        the extension points add-ons use (wp.hooks)
+src/recorder.ts               the recorder: wraps fetch and XMLHttpRequest on wp-admin screens
 src/                          the React app (TypeScript)
 scripts/zip.mjs               builds the install zip from an explicit file list
 tests/e2e/                    Playwright tests, plus the fixture plugins they run against
@@ -174,6 +226,7 @@ tests/e2e/                    Playwright tests, plus the fixture plugins they ru
 webpack.config.js             stock wp-scripts config, minification off
 postcss.config.js             same for CSS
 .wordpress-org/               icon, banners, screenshots and the Playground blueprint for the plugin directory
+.github/readme/               extra screenshots for this README
 ```
 
 ### How a few things work
@@ -191,6 +244,10 @@ Requests go through `@wordpress/api-fetch` with `parse: false`, so we get the ra
 The Hooks tab gets its list from `GET routemark/v1/hooks?route=…`. It only accepts a route that's actually registered, then works out what the route's controller handles: `post_type` or `taxonomy` (read from the controller, they're protected properties), `user` or `comment`. It fills those into core's hook name patterns (`rest_prepare_{s}`, `rest_{s}_query`, `rest_pre_insert_{s}` and so on) and reads the callbacks from `$wp_filter`, naming the plugin behind each one with the same lookup the route list uses.
 
 Server numbers come from `Request_Stats`. The app sends `X-Routemark-Stats: 1`. At priority 1 on `rest_pre_dispatch`, before any Send as switch, it checks you're an admin and notes the time and query count. At the very end of `rest_post_dispatch`, which is the last moment headers can be added, it puts the difference in an `X-Routemark-Stats` response header as JSON, along with the whole-request totals from `timer_float()` and `get_num_queries()`.
+
+The recorder is a separate small script (`build/recorder.js`) loaded in the head of other wp-admin screens for admins. It wraps `window.fetch` and `XMLHttpRequest`, keeps only calls to the REST root, cleans secrets out of headers and bodies, and stores the last 200 in `localStorage` under `routemark.recorder.<user ID>`. It does nothing until you start it, and the app reads the same key.
+
+`GET routemark/v1/permission?route=…&method=…&user=…` finds the endpoint's permission callback, reports where it's defined, and works out the capabilities it checks: a map for core's controllers, and for anything else a scan of the callback's source for `current_user_can( '…' )`. Asking about another user needs the same rights as Send as.
 
 ### Extending Routemark
 
@@ -227,8 +284,10 @@ Add `Requires Plugins: routemark` to your plugin header so WordPress won't activ
 | `routemark.workspaceTabs` | filter | list | Add `{ id, label, render( { route, draft, path, url, sendAs, result } ) }` for a tab next to Params, Docs and the rest. |
 | `routemark.responseActions` | filter | list | Add `{ id, label, onClick( context ) }` for a button in the response toolbar. |
 | `routemark.snippetLanguages` | filter | list | Add `{ id, label, build( { path, url, draft } ) }` for a language in the Code tab. |
-| `routemark.reportFindings` | filter | findings, routes | Add findings to the Report. Give your own `kind` a `title` and `detail`. |
+| `routemark.reportFindings` | filter | findings, routes | Add findings to the Report. Give your own `kind` a `title` and `detail`. A finding can carry a `note`, shown under it. |
+| `routemark.findingActions` | filter | list | Add `{ id, label, icon?, show?( finding ), run( finding ) }` for a button on Report findings. `show` hides it where it doesn't apply. |
 | `routemark.requestSent` | action | `{ route, draft, path, url, sendAs, result }` | Runs after every request sent from the workspace. |
+| `routemark.extensionsChanged` | action | | Call `doAction` on it when what your filters return has changed (a finding note after a save, say) and Routemark redraws. |
 
 ```js
 wp.hooks.addFilter( 'routemark.workspaceTabs', 'my-addon', ( tabs ) => [
@@ -249,7 +308,7 @@ wp.hooks.addFilter( 'routemark.workspaceTabs', 'my-addon', ( tabs ) => [
 
 The PHP only prints a few fixed strings, through `esc_html__()`, `esc_html_e()` and `esc_url()`. Data for the page goes in through `wp_add_inline_script()` as JSON with `JSON_HEX_TAG | JSON_HEX_AMP`. Everything else is rendered by React, with no `dangerouslySetInnerHTML`.
 
-The only input is the settings endpoint. Its args use `rest_validate_request_arg` and `rest_sanitize_request_arg` against the schema, so bad values get a 400. Nothing reads `$_GET`, `$_POST` or `$_SERVER`.
+Input comes in through Routemark's own REST endpoints (settings, users, hooks, permission). Their args use `rest_validate_request_arg` and `rest_sanitize_request_arg` against a schema, so bad values get a 400, and the hooks and permission endpoints only accept a route that's actually registered. The one place that reads a superglobal is the recorder, which compares `$_GET['page']` with Routemark's own page slug to stay off that screen. Nothing reads `$_POST` or `$_SERVER`.
 
 All requests use cookie auth with the `wp_rest` nonce, which api-fetch sends as `X-WP-Nonce`. Every endpoint also checks `current_user_can( 'manage_options' )`.
 
@@ -266,7 +325,7 @@ Run `phpcs` in the repo root to check against the WordPress Coding Standards (it
 ### Releasing
 
 1. Bump the version in `routemark.php` (header and `ROUTEMARK_VERSION`), `package.json` and `Stable tag` in `readme.txt`, and add a changelog entry to `readme.txt`.
-2. Commit, then `git tag v0.3.3 && git push --follow-tags`.
+2. Commit, then `git tag v0.4.0 && git push --follow-tags`.
 3. The release workflow checks the tag matches the version, builds the zip and attaches it to a GitHub release.
 
 Everything in `.wordpress-org/` goes in the `assets/` folder of the plugin's SVN repository on WordPress.org, not in the zip. That includes `blueprints/blueprint.json`, which gives the plugin page a Live Preview button: it opens Routemark in WordPress Playground, logged in, with an editor, an author and a subscriber to try Send as with.
@@ -291,14 +350,6 @@ The mark is the CC Software hex well with a route running to a marker inside it.
 The light theme has no palette of its own. It uses wp-admin's grays and the user's admin color scheme (`--wp-admin-theme-color`), so it looks like the rest of the dashboard. The dark theme uses the blues above, with `#2563EB` for the main button.
 
 The wordmark is set in Bricolage Grotesque. Everything else uses Atkinson Hyperlegible Next and Mono, picked because they keep `l`, `I` and `1` apart, which matters when you're reading IDs and keys all day. All three are bundled with the plugin under the OFL.
-
-### Ideas for later
-
-- TypeScript types generated from route schemas
-- OpenAPI export
-- Saved requests and environments (local, staging, live)
-
-Routemark was called Restbench before its WordPress.org review. Same plugin, new name.
 
 ## License
 

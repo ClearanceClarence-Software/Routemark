@@ -75,6 +75,10 @@ class Settings {
 				'enum'    => array( 'apiFetch', 'fetch', 'curl', 'php' ),
 				'default' => 'apiFetch',
 			),
+			'recorderInBar'    => array(
+				'type'    => 'boolean',
+				'default' => true,
+			),
 			'hiddenNamespaces' => array(
 				'type'     => 'array',
 				'maxItems' => 200,

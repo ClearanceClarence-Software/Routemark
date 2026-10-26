@@ -100,3 +100,18 @@ test( 'add-on findings show up in the Report', async ( { page } ) => {
 	await expect( finding ).toContainText( 'Added by the example add-on.' );
 	await expect( finding.locator( '.rmk-sev' ) ).toHaveText( 'Low' );
 } );
+
+test( 'add-on buttons on findings, and extensionsChanged re-renders the Report', async ( { page } ) => {
+	const errors = watchErrors( page );
+	await openRoutemark( page );
+	await page.getByRole( 'button', { name: 'Report', exact: true } ).click();
+	const high = page.locator( '.rmk-finding', { has: page.locator( '.rmk-sev--high' ) } ).filter( { hasText: '/submit' } ).first();
+	await expect( high.getByRole( 'button', { name: 'Mark reviewed' } ) ).toBeVisible();
+	// show() keeps it off the low ones.
+	await expect( page.locator( '.rmk-finding', { hasText: 'Example finding' } ).getByRole( 'button', { name: 'Mark reviewed' } ) ).toHaveCount( 0 );
+
+	await high.getByRole( 'button', { name: 'Mark reviewed' } ).click();
+	await expect( high.locator( '.rmk-finding-note' ) ).toHaveText( 'Reviewed' );
+	await expect( high.getByRole( 'button', { name: 'Mark reviewed' } ) ).toHaveCount( 0 );
+	expect( errors ).toEqual( [] );
+} );

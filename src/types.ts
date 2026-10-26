@@ -133,6 +133,8 @@ export interface Filters {
 	search: string;
 	methods: HttpMethod[];
 	publicOnly: boolean;
+	// Search the routes' argument and response field names instead of their paths.
+	fields: boolean;
 }
 
 export type ThemeChoice = 'light' | 'dark';
@@ -147,6 +149,8 @@ export interface Settings {
 	jsonDepth: number;
 	snippetLanguage: 'apiFetch' | 'fetch' | 'curl' | 'php';
 	hiddenNamespaces: string[];
+	// "REST calls" in the admin bar on other screens.
+	recorderInBar: boolean;
 }
 
 declare global {

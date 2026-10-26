@@ -60,6 +60,7 @@ test.describe( 'report', () => {
 		await expect( page.locator( '.rmk-ws-badges .rmk-badge--danger' ) ).toContainText( 'No permission check' );
 
 		await page.getByRole( 'tab', { name: 'Body' } ).click();
+		await page.getByRole( 'button', { name: 'JSON', exact: true } ).click();
 		await page.locator( '.rmk-tab-panel textarea' ).fill( '{"message": "hi"}' );
 		await send( page );
 		// No permission check, so a visitor really can post to it.
