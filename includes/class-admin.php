@@ -86,7 +86,7 @@ class Admin {
 		if ( ! self::pro_installed() ) {
 			$links[] = sprintf(
 				'<a href="%1$s" target="_blank" rel="noopener noreferrer" class="routemark-get-pro">%2$s</a>',
-				esc_url( ROUTEMARK_PRO_URL ),
+				esc_url( ROUTEMARK_CHECKOUT_URL ),
 				esc_html__( 'Get Pro', 'routemark' )
 			);
 		}
@@ -143,7 +143,7 @@ class Admin {
 					'billing_cycle' => 'lifetime',
 					'coupon'        => rawurlencode( (string) $offer['code'] ),
 				),
-				ROUTEMARK_PRO_URL
+				ROUTEMARK_CHECKOUT_URL
 			),
 		);
 	}
@@ -210,7 +210,7 @@ class Admin {
 			),
 			'apiVersion' => ROUTEMARK_API_VERSION,
 			// For the Routemark Pro card in Settings. Empty once Pro is installed.
-			'getPro'     => self::pro_installed() ? '' : ROUTEMARK_PRO_URL,
+			'getPro'     => self::pro_installed() ? '' : ROUTEMARK_CHECKOUT_URL,
 			'offer'      => self::launch_offer(),
 		);
 

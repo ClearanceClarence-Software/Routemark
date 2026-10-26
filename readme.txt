@@ -4,7 +4,7 @@ Tags: rest api, developer, debug, headless, json
 Requires at least: 6.6
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.3.2
+Stable tag: 0.3.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -137,6 +137,9 @@ Routemark bundles the Atkinson Hyperlegible Next and Atkinson Hyperlegible Mono 
 
 == Changelog ==
 
+= 0.3.3 =
+* Fix: with Routemark Pro active, activating Routemark showed a "Constant already defined" warning and "unexpected output" notice.
+
 = 0.3.2 =
 * New: a "Get Pro" link on the Plugins screen and a short Routemark Pro card at the bottom of Settings. Both go away once Routemark Pro is installed. Until December 31, 2026, the card also shows a launch coupon for Routemark Pro.
 * For developers: add-ons can now set how the top bar shows the product (a badge after the name and their own version, through the routemark.brand filter), rename the Tools menu entry and page title (routemark_menu_title), and give their panels an icon.
@@ -158,6 +161,9 @@ Routemark bundles the Atkinson Hyperlegible Next and Atkinson Hyperlegible Mono 
 * First release on WordPress.org.
 
 == Upgrade Notice ==
+
+= 0.3.3 =
+Fixes a PHP warning when Routemark Pro is also active.
 
 = 0.3.2 =
 More extension points for add-ons. Nothing changes if you don't use any.
