@@ -60,7 +60,6 @@ export default function Overview( { routes, namespaces, onPick, onNamespace, hid
 						<thead>
 							<tr>
 								<th>{ __( 'Namespace', 'routemark' ) }</th>
-								<th>{ __( 'Added by', 'routemark' ) }</th>
 								<th className="num">{ __( 'Routes', 'routemark' ) }</th>
 								{ METHODS.map( ( m ) => (
 									<th key={ m } className="num">
@@ -79,8 +78,9 @@ export default function Overview( { routes, namespaces, onPick, onNamespace, hid
 										{ hidden.includes( row.namespace ) && (
 											<span className="rmk-hidden-tag">{ __( 'hidden', 'routemark' ) }</span>
 										) }
+										{ /* Under the namespace, like the sidebar, so the counts always fit. */ }
+										<span className="rmk-ns-source">{ row.source ?? <span className="rmk-muted">{ __( 'unknown', 'routemark' ) }</span> }</span>
 									</td>
-									<td className="rmk-ns-source">{ row.source ?? <span className="rmk-muted">{ __( 'unknown', 'routemark' ) }</span> }</td>
 									<td className="num">{ row.routes }</td>
 									{ row.counts.map( ( c, i ) => (
 										<td key={ METHODS[ i ] } className={ `num${ c === 0 ? ' is-zero' : '' }` }>

@@ -153,3 +153,13 @@ test( 'a narrow top bar folds its labels into icons, and unfolds when there is r
 	await expect( bar ).not.toHaveClass( /is-compact/ );
 	await expect( page.locator( '.rmk-topbar .rmk-hide-sm', { hasText: 'Report' } ) ).toBeVisible();
 } );
+
+test( 'the namespaces table fits without scrolling sideways on a laptop-sized window', async ( { page } ) => {
+	await page.setViewportSize( { width: 1100, height: 800 } );
+	await openRoutemark( page );
+	const wrap = page.locator( '.rmk-overview .rmk-table-wrap' ).first();
+	expect( await wrap.evaluate( ( el ) => el.scrollWidth <= el.clientWidth + 1 ) ).toBe( true );
+	// The plugin name sits under the namespace now, not in its own column.
+	await expect( page.locator( '.rmk-table--ns th' ).first() ).toHaveText( 'Namespace' );
+	await expect( page.locator( '.rmk-table--ns tbody tr' ).first().locator( 'td' ).first().locator( '.rmk-ns-source' ) ).toBeVisible();
+} );

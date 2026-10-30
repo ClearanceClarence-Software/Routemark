@@ -4,7 +4,7 @@ Tags: rest api, developer, debug, headless, json
 Requires at least: 6.6
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.4.0
+Stable tag: 0.4.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -143,6 +143,9 @@ Routemark bundles the Atkinson Hyperlegible Next and Atkinson Hyperlegible Mono 
 
 == Changelog ==
 
+= 0.4.1 =
+* Fix: on sites with many plugins, the Overview's namespace table was wider than the page, so the PUT, PATCH and DELETE columns were pushed out of view. The plugin that added each namespace now shows under its name, and long namespaces wrap.
+
 = 0.4.0 =
 * New: a recorder for the REST calls wp-admin makes. Start it from the admin bar, use the block editor or any plugin screen, then open a recorded call in Routemark and send it again. Recorded calls stay in your browser, with secrets blanked.
 * New: fill in request bodies as a form built from the route's arguments, with each field checked before you send. New drafts only include the required fields.
@@ -180,6 +183,9 @@ Routemark bundles the Atkinson Hyperlegible Next and Atkinson Hyperlegible Mono 
 * First release on WordPress.org.
 
 == Upgrade Notice ==
+
+= 0.4.1 =
+Fixes the Overview's namespace table running off the page on sites with many plugins.
 
 = 0.4.0 =
 Adds a recorder for wp-admin's REST calls, a form for request bodies, "Why was this refused?", Compare, cURL import, table view and search for responses, and a Site Health test.
